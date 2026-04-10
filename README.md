@@ -163,5 +163,5 @@ MIT — free to use, modify and distribute.
 ---
 
 <div align="center">
-Made by <a href="https://github.com/AdamDruszad">Ádám Druszad</a>
+Made by <a href="https://github.com/AdamDruszad">AdamDruszad</a>
 </div>
