@@ -1,0 +1,8 @@
+# PC Optimizer — Python dependencies
+# Install: pip install -r requirements.txt
+
+customtkinter>=5.2.0
+psutil>=5.9.0
+
+# Build only (not needed to run):
+# pyinstaller>=6.0.0

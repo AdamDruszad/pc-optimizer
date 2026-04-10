@@ -1,0 +1,51 @@
+# Git line ending handling
+# https://git-scm.com/docs/gitattributes
+
+# Windows native line endings
+* text=auto eol=crlf
+
+# Python files should always be LF
+*.py text eol=lf
+*.pyw text eol=lf
+
+# Shell scripts should be LF
+*.sh text eol=lf
+*.bash text eol=lf
+
+# Batch files should be CRLF
+*.bat text eol=crlf
+*.cmd text eol=crlf
+
+# Config files
+*.json text
+*.toml text
+*.yaml text eol=lf
+*.yml text eol=lf
+
+# Documentation
+*.md text
+*.txt text
+*.rst text
+
+# Binary files
+*.ico binary
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.exe binary
+*.dll binary
+*.pyd binary
+*.so binary
+
+# PyInstaller
+*.spec text
+build/ export-ignore
+dist/ export-ignore
+*.manifest export-ignore
+
+# IDE files should not be exported
+.idea/ export-ignore
+.vscode/ export-ignore
+*.swp export-ignore
+*.swo export-ignore
