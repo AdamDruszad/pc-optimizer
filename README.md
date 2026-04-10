@@ -26,6 +26,10 @@ Unlike tools like Razer Cortex, it distinguishes between Intel iGPU, AMD iGPU, a
 
 ---
 
+### Prewiew
+
+![](./screenshot.png) 
+
 ## Features
 
 ### 🖥 Hardware Detection
