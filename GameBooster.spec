@@ -79,8 +79,6 @@ hidden_imports = [
     "modules.hw_optimizer",
     "modules.profile_manager",
     "modules.registry_tweaks",
-    "modules.registry_optimizer",
-    "modules.windows_optimizer",
     "modules.ram_cleaner",
     "modules.monitor",
     "modules.igpu_monitor",
