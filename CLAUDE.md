@@ -1,0 +1,37 @@
+# CLAUDE.md
+
+This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+
+## What this is
+
+GameBooster (repo name `pc-optimizer`): a Windows-only CustomTkinter desktop app that changes system state (power plan, services, registry, process priorities, DNS) for gaming, and records every original value so it can be reverted. Python 3.11+, runtime deps are only `customtkinter` and `psutil`; Windows access is stdlib (`winreg`, `ctypes`, `subprocess`). UI text, comments and logs are Hungarian; README is English.
+
+## Commands
+
+```cmd
+.venv\Scripts\activate                 :: py -3.14 -m venv .venv && pip install -e ".[dev]"
+python main.py                         :: modifying features need an elevated shell; otherwise read-only
+pytest                                 :: all tests
+pytest tests/test_journal.py::test_second_apply_keeps_first_original
+ruff check gamebooster tests main.py
+build.bat                              :: PyInstaller onedir build -> dist\GameBooster\GameBooster.exe (uac_admin)
+```
+
+## Architecture
+
+The core rule: **optimizers only plan, the journal applies.** Every optimizer returns a list of `core.journal.Change` records (kind, unique target, before, after, label, source, meta). `Journal.apply()` writes the record to `%LOCALAPPDATA%\GameBooster\journal.json` *before* performing the change, keeps the first `before` if the target is already journaled (repeated applies never overwrite the original), and drops the record if the change fails. `Journal.revert()` runs in reverse order and keeps failed entries for retry. How each `kind` is applied/reverted lives in `journal.HANDLERS` (registry, service, power, power_overlay, priority, dns); add a kind there, not in an optimizer.
+
+- `core/winapi.py`: the only place that shells out or touches the registry/services/power APIs. `run()` decodes console output with the OEM code page (cp852 on Hungarian Windows); `powershell()` forces UTF-8.
+- `core/storage.py`: data dir, atomic JSON writes, settings. A corrupt JSON is renamed to `*.corrupt-<ts>`, never silently overwritten.
+- `core/legacy.py`: imports v2.x state files (`original_state.json`, `registry_snapshot.json`) from the exe/repo dir into the journal on startup.
+- `optimizers/`: `power`, `tweaks` (declarative `Tweak`/`RegValue`, with `default` = the value Windows assumes when the registry value is missing), `services` (fixed allowlist; unknown names raise), `game_mode` (`GameWatcher` thread, session entries use source `game_mode` and are reverted on game exit and app close), `cleaner` (scan → preview → delete; refuses junction/reparse-point paths because it runs elevated), `startup` (StartupApproved bytes like Task Manager), `network`.
+- `monitoring/sampler.py`: one thread, psutil + PDH counters via `monitoring/pdh.py` (`PdhAddEnglishCounterW`, so it works on localized Windows). The UI reads `sampler.latest` / `sampler.history`; the thread never touches widgets.
+- `ui/app.py`: sidebar shell. `App.apply(changes, title)` = confirm dialog with the change labels → restore point on the first change → `journal.apply` in a worker. All background work goes through `widgets.TaskRunner` (thread pool + queue pumped by `after(50)`); only the Tk thread touches widgets. Colors/fonts/icons come from `ui/theme.py` tokens (Segoe Fluent Icons code points, no emoji).
+
+## Working rules for this repo
+
+- Apply paths change the developer's real machine. Don't run them to "test"; tests use fakes (`monkeypatch` on `winapi` functions or `journal.HANDLERS`). Read-only calls (registry reads, `powercfg /list`, `sc qc`, scans) are fine.
+- Planning functions must have no side effects (see `test_power_plan_has_no_side_effects`).
+- Don't add tweaks without a documented, checkable effect; README lists what was removed and why.
+- `threading.Thread` subclasses: don't name attributes `_stop` or `_name` (they shadow Thread internals).
+- `docs/AUDIT_ES_AKCIOTERV.md` is the audit that drove the v3 rewrite.

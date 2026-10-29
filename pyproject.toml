@@ -4,53 +4,53 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "gamebooster"
-version = "2.1.0"
-description = "Universal Windows Game Optimizer - Automatically detects hardware and optimizes Windows for gaming"
+version = "3.0.0"
+description = "Windows game optimizer with a change journal: every system change is previewed, confirmed and revertable"
 readme = "README.md"
 license = {text = "MIT"}
 requires-python = ">=3.11"
-authors = [
-    {name = "GameBooster Contributors"}
-]
-keywords = ["gaming", "windows", "optimizer", "performance", "boost", "hardware"]
+authors = [{name = "AdamDruszad"}]
+keywords = ["gaming", "windows", "optimizer", "performance", "cleaner"]
 classifiers = [
     "Development Status :: 4 - Beta",
     "Intended Audience :: End Users/Desktop",
-    "Intended Audience :: Gamers",
     "License :: OSI Approved :: MIT License",
-    "Operating System :: Microsoft :: Windows",
     "Operating System :: Microsoft :: Windows :: Windows 10",
     "Operating System :: Microsoft :: Windows :: Windows 11",
     "Programming Language :: Python :: 3",
-    "Programming Language :: Python :: 3.11",
-    "Programming Language :: Python :: 3.12",
-    "Topic :: Games/Entertainment",
-    "Topic :: System :: Operating System",
     "Topic :: Utilities",
 ]
 dependencies = [
-    "customtkinter>=5.2.0",
-    "psutil>=5.9.0",
+    "customtkinter>=5.2,<7",
+    "psutil>=5.9",
 ]
 
 [project.optional-dependencies]
-dev = [
-    "pyinstaller>=6.0.0",
-    "pytest>=7.0.0",
-]
+nvidia = ["nvidia-ml-py"]   # NVIDIA GPU-hőmérséklet a Monitor oldalon
+dev = ["pyinstaller>=6.0", "pytest>=7.0", "ruff"]
 
 [project.scripts]
 gamebooster = "main:main"
 
 [project.urls]
-Homepage = "https://github.com/YOUR_USERNAME/GameBooster"
-Repository = "https://github.com/YOUR_USERNAME/GameBooster.git"
-Issues = "https://github.com/YOUR_USERNAME/GameBooster/issues"
+Homepage = "https://github.com/AdamDruszad/pc-optimizer"
+Issues = "https://github.com/AdamDruszad/pc-optimizer/issues"
+
+[tool.setuptools]
+py-modules = ["main"]
 
 [tool.setuptools.packages.find]
-include = ["modules*", "gui*", "utils*"]
+include = ["gamebooster*"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
-python_files = "test_*.py"
-python_functions = "test_*"
+pythonpath = ["."]
+
+[tool.ruff]
+line-length = 110
+target-version = "py311"
+
+[tool.ruff.lint]
+# BLE001: a napló, a mintavevő és a figyelőszál határán minden hibát naplózni kell, nem leállni.
+# PLW1510: a visszatérési kódot a winapi.run() maga ellenőrzi.
+ignore = ["BLE001", "PLW1510"]

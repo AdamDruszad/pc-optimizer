@@ -1,8 +1,10 @@
-# PC Optimizer — Python dependencies
-# Install: pip install -r requirements.txt
+# GameBooster — futtatási függőségek
+# Telepítés: pip install -r requirements.txt
 
-customtkinter>=5.2.0
-psutil>=5.9.0
+customtkinter>=5.2,<7
+psutil>=5.9
 
-# Build only (not needed to run):
-# pyinstaller>=6.0.0
+# Opcionális, NVIDIA GPU-hőmérséklethez:
+# nvidia-ml-py
+# Fejlesztéshez és buildhez:
+# pyinstaller>=6.0  pytest  ruff
