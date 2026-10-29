@@ -34,8 +34,11 @@ class App(ctk.CTk):
         super().__init__(fg_color=theme.BG)
         theme.init(self)
         self.title("GameBooster")
-        self.geometry("1240x800")
-        self.minsize(1040, 680)
+        # Kis kijelzőn (pl. 1366×768) se lógjon ki az ablak a tálca alá
+        width = min(1240, self.winfo_screenwidth() - 40)
+        height = min(800, self.winfo_screenheight() - 100)
+        self.geometry(f"{width}x{height}")
+        self.minsize(min(1040, width), min(680, height))
 
         self.admin = winapi.is_admin()
         self.settings = storage.load_settings()
