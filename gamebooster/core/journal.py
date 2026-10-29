@@ -70,6 +70,8 @@ def _service_apply(c: Change) -> None:
 
 def _service_revert(c: Change) -> None:
     winapi.set_service_start(c.meta["name"], c.before)
+    if "delayed" in c.meta:  # a v2-ből átvett tételeknél nincs rögzítve
+        winapi.set_service_delayed_flag(c.meta["name"], c.meta["delayed"])
     if c.meta.get("was_running") and c.before != "disabled":
         winapi.start_service(c.meta["name"])
 

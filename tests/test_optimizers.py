@@ -38,12 +38,27 @@ def test_services_plan_rejects_names_outside_allowlist():
 
 
 def test_services_plan_skips_already_set_and_missing(monkeypatch):
-    starts = {"DiagTrack": "disabled", "Fax": None, "SysMain": "auto"}
+    # A WSearch célja „Kézi”, de a már letiltottat nem kapcsolhatjuk vissza
+    starts = {"DiagTrack": "disabled", "Fax": None, "SysMain": "auto", "WSearch": "disabled"}
     monkeypatch.setattr(services.winapi, "service_start_type", starts.get)
     monkeypatch.setattr(services.winapi, "service_running", lambda n: True)
-    [change] = services.plan(["DiagTrack", "Fax", "SysMain"])
+    monkeypatch.setattr(services.winapi, "service_delayed_flag", lambda n: 1)
+    [change] = services.plan(["DiagTrack", "Fax", "SysMain", "WSearch"])
     assert (change.target, change.before, change.after) == ("service:SysMain", "auto", "demand")
-    assert change.meta == {"name": "SysMain", "stop": True, "was_running": True}
+    assert change.meta == {"name": "SysMain", "stop": True, "was_running": True, "delayed": 1}
+
+
+def test_service_revert_restores_hidden_delayed_flag(monkeypatch):
+    # Az `sc config start=` nullázza a DelayedAutostart-ot, ezért külön visszaírjuk
+    from gamebooster.core import journal
+    calls = []
+    monkeypatch.setattr(journal.winapi, "set_service_start", lambda n, s: calls.append(("start", s)))
+    monkeypatch.setattr(journal.winapi, "set_service_delayed_flag", lambda n, v: calls.append(("delayed", v)))
+    monkeypatch.setattr(journal.winapi, "start_service", lambda n: calls.append(("run", n)))
+    change = journal.Change("service", "service:dmwappushservice", "demand", "disabled", "x", "services",
+                            meta={"name": "dmwappushservice", "was_running": False, "delayed": 1})
+    journal.HANDLERS["service"][1](change)
+    assert calls == [("start", "demand"), ("delayed", 1)]
 
 
 def test_power_plan_falls_back_to_overlay_on_modern_standby(monkeypatch):

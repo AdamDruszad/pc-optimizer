@@ -42,7 +42,22 @@ CPU core temperature needs a kernel driver (the WinRing0 driver used by many too
 Microsoft Defender). GameBooster installs no driver: it shows the ACPI thermal zone, and the GPU
 temperature on NVIDIA if `nvidia-ml-py` is installed.
 
-## Install and run
+## Install
+
+Download **`GameBooster-Setup-x.y.z.exe`** from the
+[latest release](https://github.com/AdamDruszad/pc-optimizer/releases/latest) and run it. The installer
+puts the app in `Program Files`, adds it to the Start menu (type "GameBooster" in Start to launch it),
+optionally adds it to `PATH` (then `gamebooster` works in any terminal) and registers an uninstaller
+in **Settings → Apps**. No Python needed. A portable zip is attached to the release too.
+
+The exe is not code-signed yet, so on first launch Windows SmartScreen may show "Windows protected
+your PC": click **More info → Run anyway**.
+
+Data (journal, settings, log) lives in `%LOCALAPPDATA%\GameBooster`. Uninstalling keeps it, so
+changes stay revertable after a reinstall; revert them in **History** before uninstalling if you
+want a clean system.
+
+### Run from source
 
 ```bash
 pip install -r requirements.txt
@@ -50,7 +65,7 @@ python main.py
 ```
 
 Modifying features need Administrator rights; without them the app runs read-only and offers a
-"restart as admin" button. Data (journal, settings, log) lives in `%LOCALAPPDATA%\GameBooster`.
+"restart as admin" button.
 
 Upgrading from 2.x: on first start, v3 imports the old `original_state.json` and
 `registry_snapshot.json` into the journal, so changes made by v2 can be reverted from **History**.
@@ -59,7 +74,12 @@ Upgrading from 2.x: on first start, v3 imports the old `original_state.json` and
 
 ```cmd
 build.bat           :: venv + dependencies + PyInstaller -> dist\GameBooster\GameBooster.exe
+                    :: + dist\GameBooster-Setup-x.y.z.exe if Inno Setup 6 is installed
 ```
+
+Releasing: bump `__version__` in `gamebooster/__init__.py`, then push a matching tag (`v3.0.1`).
+The `release` workflow runs the tests, builds the exe and the installer, and publishes both on the
+Releases page.
 
 Details: [BUILD_GUIDE.md](BUILD_GUIDE.md)
 
