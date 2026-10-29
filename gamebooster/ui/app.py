@@ -29,15 +29,25 @@ PAGES = [
 ]
 
 
+def window_geometry(screen_w: int, screen_h: int, scale: float) -> tuple[int, int, int, int]:
+    """Ablakméret (CTk-pontban) és hely (pixelben), hogy kis kijelzőn se lógjon a tálca alá.
+    A képernyő fizikai pixelben jön, a CTk a méretet a skálázással szorozza, a helyet nem;
+    a címsor (~30) és a tálca (~50 pont) nincs benne a geometriában."""
+    width = min(1240, int((screen_w - 40 * scale) / scale))
+    height = min(800, int((screen_h - 120 * scale) / scale))
+    x = (screen_w - round(width * scale)) // 2
+    y = max(0, (screen_h - round(height * scale)) // 2 - round(30 * scale))
+    return width, height, x, y
+
+
 class App(ctk.CTk):
     def __init__(self):
         super().__init__(fg_color=theme.BG)
         theme.init(self)
         self.title("GameBooster")
-        # Kis kijelzőn (pl. 1366×768) se lógjon ki az ablak a tálca alá
-        width = min(1240, self.winfo_screenwidth() - 40)
-        height = min(800, self.winfo_screenheight() - 100)
-        self.geometry(f"{width}x{height}")
+        width, height, x, y = window_geometry(self.winfo_screenwidth(), self.winfo_screenheight(),
+                                              self._get_window_scaling())
+        self.geometry(f"{width}x{height}+{x}+{y}")
         self.minsize(min(1040, width), min(680, height))
 
         self.admin = winapi.is_admin()
