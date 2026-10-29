@@ -8,6 +8,7 @@ import json
 import subprocess
 import os
 import logging
+import winreg
 
 logger = logging.getLogger(__name__)
 
@@ -24,30 +25,53 @@ def _get_state_file() -> str:
         )
 
 
+def write_json_atomic(path: str, data) -> None:
+    """Átmeneti fájlba ír, majd cserél: megszakadt írás nem hagy sérült mentést."""
+    tmp = f"{path}.tmp"
+    with open(tmp, "w", encoding="utf-8") as f:
+        json.dump(data, f, indent=2, ensure_ascii=False)
+        f.flush()
+        os.fsync(f.fileno())
+    os.replace(tmp, path)
+
+
 TARGET_SERVICES = [
     "SysMain",
     "WSearch",
     "DiagTrack",
-    "wuauserv",
     "MapsBroker",
     "RetailDemo",
-    "WbioSrvc",
 ]
+
+_START_NAMES = {
+    0: "BOOT_START",
+    1: "SYSTEM_START",
+    2: "AUTO_START",
+    3: "DEMAND_START",
+    4: "DISABLED",
+}
+
+
+def start_type_name(start: int, delayed: int) -> str:
+    """Registry Start + DelayedAutostart → sc-szerű név (késleltetett indítással)."""
+    if start == 2 and delayed:
+        return "DELAYED_AUTO_START"
+    return _START_NAMES.get(start, "UNKNOWN")
 
 
 def get_service_status(service_name: str) -> str:
+    """Indítási típus a registryből (az `sc qc` kimenet nem jelöli egyértelműen a késleltetést)."""
     try:
-        result = subprocess.run(
-            ["sc", "qc", service_name],
-            capture_output=True, text=True, timeout=5
-        )
-        for line in result.stdout.splitlines():
-            if "START_TYPE" in line:
-                parts = line.split()
-                return parts[-1].strip()
-    except Exception:
-        pass
-    return "UNKNOWN"
+        with winreg.OpenKey(winreg.HKEY_LOCAL_MACHINE,
+                            rf"SYSTEM\CurrentControlSet\Services\{service_name}") as key:
+            start = winreg.QueryValueEx(key, "Start")[0]
+            try:
+                delayed = winreg.QueryValueEx(key, "DelayedAutostart")[0]
+            except FileNotFoundError:
+                delayed = 0
+        return start_type_name(start, delayed)
+    except OSError:
+        return "UNKNOWN"
 
 
 def get_service_running_state(service_name: str) -> str:
@@ -65,17 +89,29 @@ def get_service_running_state(service_name: str) -> str:
     return "UNKNOWN"
 
 
-def save_original_state() -> dict:
-    state = {}
-    for svc in TARGET_SERVICES:
+def save_original_state(services: list[str] = TARGET_SERVICES) -> dict:
+    """
+    Elmenti a szolgáltatások eredeti állapotát.
+    A már mentett szolgáltatást nem írja felül: egy ismételt Boost idején
+    a rendszerben már a módosított (letiltott) érték van.
+    """
+    state = load_original_state() or {}
+    for svc in services:
+        if svc in state:
+            continue
+        start_type = get_service_status(svc)
+        if start_type == "UNKNOWN":
+            continue  # nem létező szolgáltatás
         state[svc] = {
-            "start_type": get_service_status(svc),
+            "start_type": start_type,
             "running":    get_service_running_state(svc),
         }
-    path = _get_state_file()
-    with open(path, "w", encoding="utf-8") as f:
-        json.dump(state, f, indent=2)
+    write_state(state)
     return state
+
+
+def write_state(state: dict) -> None:
+    write_json_atomic(_get_state_file(), state)
 
 
 def load_original_state() -> dict | None:

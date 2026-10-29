@@ -39,7 +39,7 @@ Unlike tools like Razer Cortex, it distinguishes between Intel iGPU, AMD iGPU, a
 ### 🖥 Hardware Detection
 - Automatically identifies GPU type: Intel iGPU / AMD iGPU / AMD dedicated / Nvidia
 - Detects CPU brand and P+E core layout (Intel 12th gen hybrid architecture)
-- Recognizes power state (charger vs. battery) — auto-boosts on AC power
+- Recognizes power state (charger vs. battery)
 - Identifies active network type (Wi-Fi / Ethernet) with latency warning
 
 ### 🚀 Boost Profiles
@@ -47,7 +47,6 @@ Unlike tools like Razer Cortex, it distinguishes between Intel iGPU, AMD iGPU, a
 - **Office** — minimal intervention, Balanced power plan
 - **Battery Saver** — extends battery life, suppresses background activity
 - **Custom profiles** — create and save your own (JSON persistence)
-- Auto-boost when charger is plugged in
 
 ### 🔑 Registry Optimizer
 8 proven registry tweaks with full backup/restore:

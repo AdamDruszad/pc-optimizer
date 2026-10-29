@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "gamebooster"
-version = "2.1.0"
+version = "2.1.1"
 description = "Universal Windows Game Optimizer - Automatically detects hardware and optimizes Windows for gaming"
 readme = "README.md"
 license = {text = "MIT"}
@@ -52,5 +52,6 @@ include = ["modules*", "gui*", "utils*"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
+pythonpath = ["."]
 python_files = "test_*.py"
 python_functions = "test_*"

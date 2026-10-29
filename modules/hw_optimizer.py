@@ -14,7 +14,7 @@ import time
 from modules.hardware_detector import HardwareProfile, GpuType, PowerState
 from modules.profile_manager   import BoostProfile
 from utils.state_manager       import save_original_state, load_original_state
-from utils.state_manager       import has_saved_state, delete_saved_state
+from utils.state_manager       import has_saved_state, delete_saved_state, write_state
 
 logger = logging.getLogger(__name__)
 
@@ -72,7 +72,9 @@ def _stop_service(svc: str) -> tuple[bool, str]:
 
 def _restore_service(svc: str, start_type: str) -> tuple[bool, str]:
     TYPE_MAP = {
-        "AUTO_START":   "auto",
+        "AUTO_START":         "auto",
+        "DELAYED_AUTO_START": "delayed-auto",
+        "(DELAYED)":          "delayed-auto",  # a v2.1 a késleltetett indítást így mentette
         "DEMAND_START": "demand",
         "DISABLED":     "disabled",
         "BOOT_START":   "boot",
@@ -86,7 +88,7 @@ def _restore_service(svc: str, start_type: str) -> tuple[bool, str]:
 
 
 def _set_proc_priority(name: str, level: str) -> bool:
-    import psutil
+    from utils.procs import iter_processes
     LEVELS = {
         "below_normal": 0x00004000,
         "normal":       0x00000020,
@@ -94,10 +96,10 @@ def _set_proc_priority(name: str, level: str) -> bool:
     }
     pclass = LEVELS.get(level, 0x00000020)
     found  = False
-    for proc in psutil.process_iter(["pid", "name"]):
+    for proc, info in iter_processes(["name"]):
         try:
-            if proc.info["name"].lower() == name.lower():
-                h = ctypes.windll.kernel32.OpenProcess(0x1F0FFF, False, proc.info["pid"])
+            if (info["name"] or "").lower() == name.lower():
+                h = ctypes.windll.kernel32.OpenProcess(0x1F0FFF, False, proc.pid)
                 if h:
                     ctypes.windll.kernel32.SetPriorityClass(h, pclass)
                     ctypes.windll.kernel32.CloseHandle(h)
@@ -117,9 +119,9 @@ def _apply_igpu_extras(hw: HardwareProfile, callback):
     import psutil as _psutil
     kernel32 = ctypes.windll.kernel32
     freed = 0
-    for proc in _psutil.process_iter(["pid"]):
+    for proc in _psutil.process_iter():
         try:
-            h = kernel32.OpenProcess(0x1F0FFF, False, proc.info["pid"])
+            h = kernel32.OpenProcess(0x1F0FFF, False, proc.pid)
             if h:
                 kernel32.K32EmptyWorkingSet(h)
                 kernel32.CloseHandle(h)
@@ -175,10 +177,12 @@ def apply_boost(
     # 1. Állapot mentése
     msg("\n💾 Eredeti Windows állapot mentése...")
     try:
-        save_original_state()
+        save_original_state(profile.stop_services)
         msg("   ✓ Mentve: original_state.json")
     except Exception as e:
-        msg(f"   ⚠ Mentési hiba: {e}")
+        msg(f"   ✗ Mentési hiba: {e}")
+        msg("❌ Mentés nélkül nem módosítok semmit. A Boost leállt.")
+        return log
 
     # 2. Energiaséma
     msg(f"\n⚡ Energiaséma beállítása...")
@@ -234,7 +238,11 @@ def restore_original(callback=None) -> list[str]:
         msg("⚠ Nincs mentett állapot — előbb aktiváld a Boost-ot!")
         return log
 
-    state = load_original_state()
+    try:
+        state = load_original_state() or {}
+    except Exception as e:
+        msg(f"❌ A mentett állapot nem olvasható: {e}")
+        return log
     msg("🔄 Visszaállítás az eredeti Windows állapotra...")
 
     # Balanced energiaséma
@@ -242,10 +250,19 @@ def restore_original(callback=None) -> list[str]:
     msg(f"   {'✓' if ok else '✗'} {info}")
 
     # Szolgáltatások visszaállítása
+    failed = {}
     for svc, info in state.items():
         ok, name = _restore_service(svc, info.get("start_type", "DEMAND_START"))
-        msg(f"   {'✓' if ok else '⚠'} {name} visszaállítva")
+        msg(f"   {'✓' if ok else '✗'} {name} {'visszaállítva' if ok else 'visszaállítása sikertelen'}")
+        # Az UNKNOWN (v2.1-ben nem olvasható vagy nem létező) tételt nem érdemes újrapróbálni
+        if not ok and info.get("start_type") != "UNKNOWN":
+            failed[svc] = info
 
-    delete_saved_state()
-    msg("✅ Visszaállítás kész!")
+    # A sikertelen tételek mentése megmarad, hogy újra lehessen próbálni
+    if failed:
+        write_state(failed)
+        msg(f"⚠ {len(failed)} szolgáltatás mentése megmaradt. Próbáld újra a visszaállítást.")
+    else:
+        delete_saved_state()
+        msg("✅ Visszaállítás kész!")
     return log

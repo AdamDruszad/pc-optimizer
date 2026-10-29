@@ -33,6 +33,7 @@ import re
 import psutil
 from collections import deque
 from dataclasses import dataclass, field
+from utils.procs import iter_processes
 
 logger = logging.getLogger(__name__)
 
@@ -255,22 +256,19 @@ def find_gpu_hungry_processes() -> list[dict]:
     Visszaad egy listát {"name", "display", "pid", "ram_mb"} dict-ekkel.
     """
     found = []
-    running = {p.info['name'].lower(): p for p in
-               psutil.process_iter(['name', 'pid', 'memory_info'])
-               if p.info['name']}
+    running = {info['name'].lower(): (proc.pid, info['memory_info'])
+               for proc, info in iter_processes(['name', 'memory_info'])
+               if info['name'] and info['memory_info']}
     for proc_name, display in GPU_HUNGRY_PROCESSES.items():
-        proc = running.get(proc_name.lower())
-        if proc:
-            try:
-                ram_mb = proc.info['memory_info'].rss // (1024 * 1024)
-                found.append({
-                    "name":    proc_name,
-                    "display": display,
-                    "pid":     proc.info['pid'],
-                    "ram_mb":  ram_mb,
-                })
-            except (psutil.NoSuchProcess, psutil.AccessDenied):
-                pass
+        entry = running.get(proc_name.lower())
+        if entry:
+            pid, mem = entry
+            found.append({
+                "name":    proc_name,
+                "display": display,
+                "pid":     pid,
+                "ram_mb":  mem.rss // (1024 * 1024),
+            })
     return found
 
 
@@ -379,9 +377,9 @@ def optimize_igpu_memory(adapter_info: IgpuAdapterInfo,
         kernel32 = ctypes.windll.kernel32
         import psutil as _psutil
         freed = 0
-        for proc in _psutil.process_iter(['pid', 'name']):
+        for proc in _psutil.process_iter():
             try:
-                handle = kernel32.OpenProcess(0x1F0FFF, False, proc.info['pid'])
+                handle = kernel32.OpenProcess(0x1F0FFF, False, proc.pid)
                 if handle:
                     kernel32.K32EmptyWorkingSet(handle)
                     kernel32.CloseHandle(handle)

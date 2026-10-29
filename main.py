@@ -106,7 +106,7 @@ def main():
 
     logger = logging.getLogger("GameBooster")
     logger.info("=" * 55)
-    logger.info("GameBooster v2.1 indul...")
+    logger.info("GameBooster v2.1.1 indul...")
     logger.info(f"Python:   {sys.version.split()[0]}")
     logger.info(f"Frozen:   {getattr(sys, 'frozen', False)}")
     logger.info(f"base_dir: {base_dir}")

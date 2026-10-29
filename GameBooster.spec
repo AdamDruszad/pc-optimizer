@@ -85,6 +85,7 @@ hidden_imports = [
     "modules.monitor",
     "modules.igpu_monitor",
     "utils.state_manager",
+    "utils.procs",
 
     # Egyéb stdlib
     "json",

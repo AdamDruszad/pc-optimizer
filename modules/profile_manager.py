@@ -17,6 +17,7 @@ import copy
 import logging
 from dataclasses import dataclass, field, asdict
 from typing import Any
+from utils.state_manager import write_json_atomic
 
 logger = logging.getLogger(__name__)
 
@@ -108,10 +109,8 @@ BUILTIN_PROFILES: dict[str, BoostProfile] = {
             "SysMain",      # Superfetch — RAM-ot eszik, gaming közben haszontalan
             "WSearch",      # Windows Search indexelő
             "DiagTrack",    # Telemetria
-            "wuauserv",     # Windows Update
             "MapsBroker",   # Offline térkép
             "RetailDemo",   # Retail Demo
-            "WbioSrvc",     # Biometrikus (ha nincs fingerprint reader)
         ],
         ram_clean_on_boost   = True,
         ram_clean_aggressive = True,
@@ -156,10 +155,8 @@ BUILTIN_PROFILES: dict[str, BoostProfile] = {
             "SysMain",
             "WSearch",
             "DiagTrack",
-            "wuauserv",
             "MapsBroker",
             "RetailDemo",
-            "WbioSrvc",
         ],
         ram_clean_on_boost   = True,
         ram_clean_aggressive = False,
@@ -211,9 +208,7 @@ class ProfileManager:
         try:
             path = _get_profiles_file()
             os.makedirs(os.path.dirname(path), exist_ok=True)
-            data = {k: asdict(v) for k, v in self._custom.items()}
-            with open(path, "w", encoding="utf-8") as f:
-                json.dump(data, f, indent=2, ensure_ascii=False)
+            write_json_atomic(path, {k: asdict(v) for k, v in self._custom.items()})
         except Exception as e:
             logger.error(f"Profilok mentési hiba: {e}")
 
@@ -236,8 +231,7 @@ class ProfileManager:
         try:
             path = _get_active_file()
             os.makedirs(os.path.dirname(path), exist_ok=True)
-            with open(path, "w", encoding="utf-8") as f:
-                json.dump({"active": self._active_key}, f)
+            write_json_atomic(path, {"active": self._active_key})
         except Exception:
             pass
 

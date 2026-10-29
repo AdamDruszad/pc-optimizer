@@ -9,6 +9,7 @@ import ctypes.wintypes
 import psutil
 import os
 import logging
+from utils.procs import iter_processes
 
 logger = logging.getLogger(__name__)
 
@@ -42,9 +43,9 @@ def empty_working_sets(callback=None) -> tuple[int, int]:
 
     kernel32 = ctypes.windll.kernel32
 
-    for proc in psutil.process_iter(['pid', 'name']):
+    for proc in psutil.process_iter():
         try:
-            pid = proc.info['pid']
+            pid = proc.pid
             if pid == 0:  # System Idle Process kihagyása
                 continue
 
@@ -89,7 +90,6 @@ BACKGROUND_THROTTLE_PROCESSES = [
     "SearchHost.exe",
     "SearchIndexer.exe",
     "MsMpEng.exe",       # Windows Defender (csak below_normal, NE tiltsuk!)
-    "svchost.exe",       # Néhányat érintünk
     "RuntimeBroker.exe",
 ]
 
@@ -103,11 +103,11 @@ def set_process_priority(process_name: str, priority: str = "high") -> tuple[boo
         return False, f"Ismeretlen prioritás: {priority}"
 
     found = False
-    for proc in psutil.process_iter(['pid', 'name']):
-        if proc.info['name'].lower() == process_name.lower():
+    for proc, info in iter_processes(['name']):
+        if (info['name'] or "").lower() == process_name.lower():
             try:
                 handle = ctypes.windll.kernel32.OpenProcess(
-                    PROCESS_ALL_ACCESS, False, proc.info['pid']
+                    PROCESS_ALL_ACCESS, False, proc.pid
                 )
                 if handle:
                     ctypes.windll.kernel32.SetPriorityClass(handle, priority_class)
@@ -156,16 +156,14 @@ def boost_cs2_priority(callback=None) -> list[str]:
 def get_top_ram_consumers(n: int = 8) -> list[dict]:
     """Visszaadja a legtöbb RAM-ot fogyasztó folyamatokat."""
     procs = []
-    for proc in psutil.process_iter(['pid', 'name', 'memory_info']):
-        try:
-            mem_mb = proc.info['memory_info'].rss // (1024 * 1024)
-            procs.append({
-                "name":   proc.info['name'],
-                "pid":    proc.info['pid'],
-                "mem_mb": mem_mb,
-            })
-        except (psutil.NoSuchProcess, psutil.AccessDenied):
-            pass
+    for proc, info in iter_processes(['name', 'memory_info']):
+        if info['memory_info'] is None:  # hozzáférés megtagadva
+            continue
+        procs.append({
+            "name":   info['name'] or "?",
+            "pid":    proc.pid,
+            "mem_mb": info['memory_info'].rss // (1024 * 1024),
+        })
 
     procs.sort(key=lambda x: x['mem_mb'], reverse=True)
     return procs[:n]

@@ -22,6 +22,7 @@ import logging
 import json
 import os
 from dataclasses import dataclass, field
+from utils.state_manager import write_json_atomic
 
 logger = logging.getLogger(__name__)
 
@@ -97,9 +98,7 @@ def _reg_delete_value(hive, key_path: str, value_name: str) -> bool:
 
 def _save_snapshot(snapshot: dict):
     try:
-        path = _get_snapshot_file()
-        with open(path, "w", encoding="utf-8") as f:
-            json.dump(snapshot, f, indent=2, ensure_ascii=False)
+        write_json_atomic(_get_snapshot_file(), snapshot)
     except Exception as e:
         logger.error(f"Registry snapshot mentési hiba: {e}")
 
@@ -569,7 +568,7 @@ def apply_registry_tweaks(
     Visszaad egy log listát.
     """
     log  = []
-    snap = _load_snapshot() or {}
+    snap = {}  # az alkalmazás előtt most kiolvasott értékek
 
     def msg(m: str):
         log.append(m)
@@ -623,8 +622,14 @@ def apply_registry_tweaks(
         ok = apply_mouse_latency(snap, msg)
         results.append(("Egér latencia", ok))
 
-    # Snapshot mentése
-    _save_snapshot(snap)
+    # Snapshot mentése: a korábban mentett érték az eredeti, egy ismételt
+    # alkalmazás már a módosított értéket olvasta ki, ezért nem írhatja felül
+    saved = _load_snapshot() or {}
+    for section, values in snap.items():
+        saved_section = saved.setdefault(section, {})
+        for name, info in values.items():
+            saved_section.setdefault(name, info)
+    _save_snapshot(saved)
 
     # Összesítés
     ok_count  = sum(1 for _, ok in results if ok)
@@ -664,7 +669,7 @@ def restore_registry_tweaks(callback=None) -> list[str]:
     }
 
     restored = 0
-    errors   = 0
+    failed   = {}
 
     for section_name, section_data in snap.items():
         if not isinstance(section_data, dict):
@@ -676,23 +681,30 @@ def restore_registry_tweaks(callback=None) -> list[str]:
             orig_type = val_info.get("type")
 
             hive = HIVE_MAP.get(hive_str, winreg.HKEY_LOCAL_MACHINE)
+            # A Nagle-szekció kulcsa "GUID_érték" alakú, a registry érték neve a vége
+            reg_name = val_name.rsplit("_", 1)[-1] if section_name == "nagle" else val_name
 
             if orig_val is None:
                 # Eredeti érték nem létezett — töröljük a mi értékünket
-                _reg_delete_value(hive, key_path, val_name)
-                restored += 1
+                ok = _reg_delete_value(hive, key_path, reg_name)
             else:
                 # Eredeti értékre visszaírjuk
                 reg_type = orig_type if orig_type else winreg.REG_DWORD
-                ok = _reg_write(hive, key_path, val_name, orig_val, reg_type)
-                if ok:
-                    restored += 1
-                else:
-                    errors += 1
-                    msg(f"   ⚠ Visszaállítási hiba: {val_name}")
+                ok = _reg_write(hive, key_path, reg_name, orig_val, reg_type)
+            if ok:
+                restored += 1
+            else:
+                failed.setdefault(section_name, {})[val_name] = val_info
+                msg(f"   ⚠ Visszaállítási hiba: {reg_name}")
 
-    _delete_snapshot()
-    msg(f"✅ Visszaállítva: {restored} érték, {errors} hiba")
+    # A sikertelen tételek mentése megmarad, hogy újra lehessen próbálni
+    errors = sum(len(v) for v in failed.values())
+    if failed:
+        _save_snapshot(failed)
+        msg(f"⚠ Visszaállítva: {restored} érték, {errors} hiba. A hibás tételek mentése megmaradt.")
+    else:
+        _delete_snapshot()
+        msg(f"✅ Visszaállítva: {restored} érték, 0 hiba")
     return log
 
 

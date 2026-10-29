@@ -10,6 +10,7 @@ import threading
 import time
 import logging
 from dataclasses import dataclass, field
+from utils.procs import iter_processes
 
 logger = logging.getLogger(__name__)
 
@@ -104,11 +105,11 @@ def get_cs2_stats() -> tuple[bool, float, int]:
     """
     Visszaadja a CS2 folyamat adatait: (fut, cpu%, ram_mb)
     """
-    for proc in psutil.process_iter(['name', 'cpu_percent', 'memory_info']):
+    for proc, info in iter_processes(['name', 'memory_info']):
         try:
-            if proc.info['name'].lower() in CS2_NAMES:
+            if (info['name'] or "").lower() in CS2_NAMES and info['memory_info']:
                 cpu = proc.cpu_percent(interval=None)
-                ram = proc.info['memory_info'].rss // (1024 * 1024)
+                ram = info['memory_info'].rss // (1024 * 1024)
                 return True, round(cpu, 1), ram
         except (psutil.NoSuchProcess, psutil.AccessDenied):
             pass

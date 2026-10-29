@@ -13,6 +13,7 @@ Tabok:
 
 import customtkinter as ctk
 import tkinter as tk
+from tkinter import messagebox
 import threading
 import os
 import sys
@@ -35,6 +36,7 @@ from modules.monitor           import system_monitor, SystemSnapshot
 from modules.igpu_monitor      import igpu_monitor, IgpuSnapshot, optimize_igpu_memory
 from gui.sparkline             import SparklineChart
 from gui.app_paths             import init as init_paths
+from utils.state_manager       import has_saved_state
 from modules.registry_tweaks  import (
     apply_registry_tweaks, restore_registry_tweaks,
     get_current_registry_status, has_registry_snapshot,
@@ -148,7 +150,7 @@ class GameBoosterApp(ctk.CTk):
         if app_dir:
             init_paths(app_dir)
 
-        self.title("GameBooster v2.1 — Universal Windows Optimizer")
+        self.title("GameBooster v2.1.1 — Universal Windows Optimizer")
         self.geometry("980x760")
         self.minsize(860, 660)
         self.configure(fg_color=C_BG)
@@ -161,6 +163,15 @@ class GameBoosterApp(ctk.CTk):
         self._build_ui()
         self._start_monitors()
         self._detect_hardware_async()
+        self.protocol("WM_DELETE_WINDOW", self._on_close)
+
+        # Az előző munkamenet Boostja aktív maradhatott (az állapotfájl erről árulkodik)
+        if has_saved_state():
+            self._boost_active = True
+            self.boost_badge_lbl.configure(text="●  AKTÍV (előző munkamenet)",
+                                           text_color=C_GOLD, fg_color="#2E2000")
+            self.boost_log.log("⚠ Az előző munkamenet Boost módosításai még aktívak.")
+            self.boost_log.log("   A VISSZAÁLLÍTÁS gombbal állíthatod vissza őket.")
 
     # ─────────────────────────────────────────
     #  UI FELÉPÍTÉS
@@ -173,7 +184,7 @@ class GameBoosterApp(ctk.CTk):
         hdr.pack_propagate(False)
         ctk.CTkLabel(hdr, text="⚡  GAME BOOSTER",
                      font=("Segoe UI Black", 20), text_color=C_ACCENT).pack(side="left", padx=20)
-        ctk.CTkLabel(hdr, text="v2.0 — Universal Optimizer",
+        ctk.CTkLabel(hdr, text="v2.1.1 — Universal Optimizer",
                      font=("Segoe UI", 11), text_color=C_MUTED).pack(side="left", padx=4)
 
         # Státusz badge-ek (jobb oldal)
@@ -878,9 +889,6 @@ class GameBoosterApp(ctk.CTk):
     def _on_hw_change(self, power, batt, net, net_name):
         """Tápellátás vagy hálózat változás callback."""
         self.after(0, self._update_hw_badges, power, batt, net, net_name)
-        # Auto-boost töltőn
-        if power == PowerState.AC_CHARGING and not self._boost_active:
-            self.after(0, self._auto_boost_on_charger)
 
     def _update_hw_badges(self, power, batt, net, net_name):
         # Tápellátás badge
@@ -904,13 +912,6 @@ class GameBoosterApp(ctk.CTk):
                                       text_color=C_GOLD, fg_color="#2E2000")
         else:
             self.net_badge.configure(text="🌐 —", text_color=C_MUTED, fg_color=C_CARD)
-
-    def _auto_boost_on_charger(self):
-        """Töltőre csatlakozáskor automatikus boost."""
-        if self._boost_active or not self.is_admin:
-            return
-        self.boost_log.log("\n⚡ Töltő csatlakoztatva — automatikus Boost aktiválás...")
-        self._on_boost_click()
 
     def _apply_snapshot(self, snap: SystemSnapshot):
         self.stat_cpu_pct.update(snap.cpu_percent)
@@ -1129,16 +1130,18 @@ class GameBoosterApp(ctk.CTk):
                                         text_color=C_MUTED, fg_color=C_PANEL)
 
     def _quick_ram_clean(self):
+        self.boost_log.log("\n🧹 RAM tisztítás...")
+
         def run():
-            self.boost_log.log("\n🧹 RAM tisztítás...")
             empty_working_sets(callback=lambda m: self.after(0, self.boost_log.log, m))
         threading.Thread(target=run, daemon=True).start()
 
     def _clean_ram(self):
+        snap = system_monitor.last_snapshot
+        before = snap.ram_available_mb if snap else 0
+        self.ram_log.log(f"🧹 Working Set ürítés (szabad: {before} MB)...")
+
         def run():
-            snap = system_monitor.last_snapshot
-            before = snap.ram_available_mb if snap else 0
-            self.ram_log.log(f"🧹 Working Set ürítés (szabad: {before} MB)...")
             empty_working_sets(callback=lambda m: self.after(0, self.ram_log.log, m))
             time.sleep(0.8)
             after = get_ram_info()
@@ -1149,8 +1152,9 @@ class GameBoosterApp(ctk.CTk):
         threading.Thread(target=run, daemon=True).start()
 
     def _set_process_priority(self):
+        self.ram_log.log("\n🎮 Folyamat prioritás beállítása...")
+
         def run():
-            self.ram_log.log("\n🎮 Folyamat prioritás beállítása...")
             boost_cs2_priority(callback=lambda m: self.after(0, self.ram_log.log, m))
         threading.Thread(target=run, daemon=True).start()
 
@@ -1257,7 +1261,7 @@ class GameBoosterApp(ctk.CTk):
         # Formátum: (attribútum neve, megjelenítési név, leírás, default)
         TWEAKS = [
             ("reg_tw_scheduling", "Játék ütemezési prioritás",
-             "Scheduling: Medium→High · GPU Priority: 8→18 · SFIO: High",
+             "Scheduling: Medium→High · GPU Priority: 2→8 · SFIO: High",
              True, "#FF2D55"),    # piros = nagy hatás
 
             ("reg_tw_sysprof",    "Rendszer profil (MMCSS)",
@@ -1265,7 +1269,7 @@ class GameBoosterApp(ctk.CTk):
              True, "#FF2D55"),
 
             ("reg_tw_win32",      "Win32 előtér CPU boost",
-             "Win32PrioritySeparation: 0x18→0x26 (játék kap max CPU időt)",
+             "Win32PrioritySeparation: 0x02→0x26 (játék kap max CPU időt)",
              True, "#FF2D55"),
 
             ("reg_tw_gamemode",   "Windows Game Mode",
@@ -1368,7 +1372,7 @@ class GameBoosterApp(ctk.CTk):
 
         STATUS_ITEMS = [
             ("Scheduling Category",    "scheduling_category", "High"),
-            ("GPU Priority",           "gpu_priority",         18),
+            ("GPU Priority",           "gpu_priority",         8),
             ("SystemResponsiveness",   "system_responsiveness", 0),
             ("Win32PrioritySep.",      "win32_priority_ok",    True),
             ("HAGS",                   "hags",                 "Bekapcsolva"),
@@ -1405,7 +1409,7 @@ class GameBoosterApp(ctk.CTk):
         self.reg_log.log("")
         self.reg_log.log("Mit csinál minden tweak:")
         self.reg_log.log("  🔴 Játék prioritás  — MMCSS Games task: Scheduling=High,")
-        self.reg_log.log("                        GPU Priority=18, SFIO=High (+3-10% FPS)")
+        self.reg_log.log("                        GPU Priority=8, SFIO=High (+3-10% FPS)")
         self.reg_log.log("  🔴 MMCSS rendszer   — SystemResponsiveness 20→0")
         self.reg_log.log("                        (100% CPU a játéknak, nem 80%)")
         self.reg_log.log("  🔴 Win32 CPU boost  — előtér folyamat max prioritás (+3-8%)")
@@ -1444,7 +1448,7 @@ class GameBoosterApp(ctk.CTk):
             ),
             "gpu_priority": (
                 str(status.get("gpu_priority", "—")),
-                status.get("gpu_priority") == 18
+                status.get("gpu_priority") == 8
             ),
             "system_responsiveness": (
                 str(status.get("system_responsiveness", "—")),
@@ -1572,6 +1576,29 @@ class GameBoosterApp(ctk.CTk):
         self.reg_restore_btn.configure(
             state="normal", text="↩  REGISTRY VISSZAÁLLÍTÁS")
         self._refresh_registry_status()
+
+    def _on_close(self):
+        # A Boost által letiltott szolgáltatások ne maradjanak észrevétlenül letiltva
+        if not (self.is_admin and has_saved_state()):
+            self.destroy()
+            return
+        _, profile = profile_manager.get_active()
+        if not profile.auto_restore_on_exit and not messagebox.askyesno(
+                "GameBooster",
+                "A Boost módosításai még aktívak.\nVisszaállítod őket kilépés előtt?",
+                parent=self):
+            self.destroy()
+            return
+
+        self.protocol("WM_DELETE_WINDOW", lambda: None)  # a visszaállítás ne szakadjon meg
+        self.tabview.set("🚀  Boost")
+        self.boost_log.log("\n↩ Visszaállítás kilépés előtt...")
+
+        def run():
+            restore_original(callback=lambda m: self.after(0, self.boost_log.log, m))
+            self.after(800, self.destroy)
+
+        threading.Thread(target=run, daemon=True).start()
 
     def destroy(self):
         system_monitor.stop()
