@@ -7,7 +7,8 @@ import psutil
 from ..core import winapi
 
 _DISPLAY_CLASS = r"SYSTEM\CurrentControlSet\Control\Class\{4d36e968-e325-11ce-bfc1-08002be10318}"
-_SKIP_GPUS = ("Microsoft Basic", "Remote Display", "Virtual", "Parsec", "Meta Virtual")
+# Virtuális/távoli kijelzőadapterek, nem valódi GPU-k (a név bármely részén)
+_SKIP_GPUS = ("Basic Display", "Basic Render", "Remote Display", "Virtual", "Parsec", "Indirect Display")
 
 
 @dataclass
@@ -42,7 +43,7 @@ def gpus() -> list[Gpu]:
             name, _ = winapi.reg_read("HKLM", path, "DriverDesc")
         except OSError:
             continue  # pl. a Properties alkulcs nem olvasható
-        if not name or name.startswith(_SKIP_GPUS):
+        if not name or any(skip in name for skip in _SKIP_GPUS):
             continue
         # A 64 bites qwMemorySize helyes 4 GB fölött is (a WMI AdapterRAM 32 bites)
         mem = _int(winapi.reg_read("HKLM", path, "HardwareInformation.qwMemorySize")[0]) \

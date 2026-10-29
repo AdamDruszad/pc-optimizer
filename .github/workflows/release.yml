@@ -1,0 +1,43 @@
+name: release
+
+# Egy `v3.0.1` formájú tag feltöltésekor: tesztek, exe, telepítő és hordozható zip a GitHub Release-hez.
+on:
+  push:
+    tags: ["v*"]
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install -r requirements.txt pyinstaller pytest
+      - run: pytest -q
+      - name: Verziószám egyezik a taggel
+        shell: pwsh
+        run: |
+          $version = "${{ github.ref_name }}".TrimStart("v")
+          python -c "import gamebooster, sys; sys.exit(gamebooster.__version__ != '$version')"
+          if ($LASTEXITCODE) { throw "A tag ($version) nem egyezik a gamebooster/__init__.py verziójával" }
+      - run: pyinstaller GameBooster.spec --noconfirm --clean
+      - name: Telepítő és hordozható zip
+        shell: pwsh
+        run: |
+          $version = "${{ github.ref_name }}".TrimStart("v")
+          choco install innosetup -y --no-progress
+          & "${env:ProgramFiles(x86)}\Inno Setup 6\ISCC.exe" /Q "/DAppVersion=$version" installer\GameBooster.iss
+          if ($LASTEXITCODE) { throw "Az Inno Setup fordítás sikertelen" }
+          Compress-Archive -Path dist\GameBooster\* -DestinationPath "dist\GameBooster-$version-portable.zip"
+      - name: GitHub Release
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          $version = "${{ github.ref_name }}".TrimStart("v")
+          gh release create "${{ github.ref_name }}" "dist\GameBooster-Setup-$version.exe" `
+            "dist\GameBooster-$version-portable.zip" --title "GameBooster $version" --generate-notes

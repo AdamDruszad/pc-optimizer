@@ -1,6 +1,6 @@
 @echo off
 :: ╔══════════════════════════════════════════════════════════════╗
-:: ║   GameBooster v2.1 — Build szkript                          ║
+:: ║   GameBooster — Build szkript                               ║
 :: ║   Egyetlen .bat fájl, ami mindent elvégez                   ║
 :: ╚══════════════════════════════════════════════════════════════╝
 :: Használat: Dupla klikk a build.bat-ra, vagy:
@@ -20,7 +20,7 @@ cd /d "%PROJECT_DIR%"
 :: Fejléc
 echo.
 echo  ══════════════════════════════════════════════════
-echo   ⚡  GameBooster v2.1 -- Build
+echo   ⚡  GameBooster -- Build
 echo  ══════════════════════════════════════════════════
 echo.
 
@@ -124,6 +124,23 @@ for /r "%DIST_DIR%" %%f in (*) do set /a DIST_SIZE+= %%~zf / 1048576
 echo  ✓ GameBooster.exe: %EXE_MB% MB
 echo  ✓ Teljes csomag:   %DIST_SIZE% MB
 echo  ✓ Helye: %DIST_DIR%
+
+:: ── Telepítő (ha telepítve van az Inno Setup 6) ──────────────
+set "ISCC="
+if exist "%LOCALAPPDATA%\Programs\Inno Setup 6\ISCC.exe" set "ISCC=%LOCALAPPDATA%\Programs\Inno Setup 6\ISCC.exe"
+if exist "%ProgramFiles(x86)%\Inno Setup 6\ISCC.exe" set "ISCC=%ProgramFiles(x86)%\Inno Setup 6\ISCC.exe"
+echo.
+if defined ISCC (
+    for /f %%v in ('python -c "import gamebooster; print(gamebooster.__version__)"') do set "APP_VER=%%v"
+    "!ISCC!" /Q /DAppVersion=!APP_VER! installer\GameBooster.iss
+    if errorlevel 1 (
+        echo  ❌ A telepítő fordítása sikertelen
+        pause & exit /b 1
+    )
+    echo  ✓ Telepítő: %PROJECT_DIR%dist\GameBooster-Setup-!APP_VER!.exe
+) else (
+    echo  ⏩ Telepítő kihagyva: nincs Inno Setup 6 ^(winget install JRSoftware.InnoSetup^)
+)
 
 :: ── Kész ─────────────────────────────────────────────────────
 echo.

@@ -13,10 +13,13 @@ GameBooster (repo name `pc-optimizer`): a Windows-only CustomTkinter desktop app
 python main.py                         :: modifying features need an elevated shell; otherwise read-only
 pytest                                 :: all tests
 pytest tests/test_journal.py::test_second_apply_keeps_first_original
-ruff check gamebooster tests main.py
+ruff check gamebooster tests scripts main.py
 python scripts\system_test.py out_dir  :: REAL system changes + revert; non-admin runs only the HKCU part. Admin part: Windows Sandbox/VM only
-build.bat                              :: PyInstaller onedir build -> dist\GameBooster\GameBooster.exe (uac_admin)
+build.bat                              :: PyInstaller onedir build -> dist\GameBooster\GameBooster.exe (uac_admin), then the installer if Inno Setup 6 exists
+iscc /DAppVersion=3.0.0 installer\GameBooster.iss   :: -> dist\GameBooster-Setup-3.0.0.exe (Start menu, optional PATH, uninstaller)
 ```
+
+Releases: `.github/workflows/release.yml` runs on a `v*` tag, checks the tag against `gamebooster.__version__`, builds exe + installer + portable zip, and creates the GitHub Release.
 
 ## Architecture
 
