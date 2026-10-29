@@ -1,6 +1,6 @@
 # -*- mode: python ; coding: utf-8 -*-
 #
-# GameBooster v2.1 — PyInstaller .spec fájl
+# GameBooster v3 — PyInstaller .spec fájl
 #
 # Használat:
 #   pyinstaller GameBooster.spec
@@ -57,7 +57,6 @@ hidden_imports = [
     "psutil._pswindows",
     "psutil._common",
     "psutil._psutil_windows",
-    "psutil._compat",
 
     # Windows API
     "winreg",
@@ -71,20 +70,6 @@ hidden_imports = [
     "tkinter.filedialog",
     "tkinter.simpledialog",
 
-    # Saját modulok (biztosítjuk hogy bekerülnek)
-    "gui.app",
-    "gui.sparkline",
-    "gui.app_paths",
-    "modules.hardware_detector",
-    "modules.hw_optimizer",
-    "modules.profile_manager",
-    "modules.registry_tweaks",
-    "modules.ram_cleaner",
-    "modules.monitor",
-    "modules.igpu_monitor",
-    "utils.state_manager",
-    "utils.procs",
-
     # Egyéb stdlib
     "json",
     "subprocess",
@@ -96,7 +81,7 @@ hidden_imports = [
     "platform",
     "logging",
     "logging.handlers",
-]
+] + collect_submodules("gamebooster")  # saját csomag: az oldalak lusta betöltése miatt is
 
 # ── Analysis ──────────────────────────────────────────────────
 

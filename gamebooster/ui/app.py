@@ -1,6 +1,6 @@
 """Az alkalmazás kerete: oldalsáv, oldalváltás, napló, alkalmaz/visszaállít folyamat."""
 import logging
-from typing import Callable
+from collections.abc import Callable
 
 import customtkinter as ctk
 
@@ -11,8 +11,7 @@ from ..monitoring import hardware
 from ..monitoring.sampler import Sampler
 from ..optimizers import game_mode
 from . import theme
-from .pages import (cleaner, dashboard, game, history, monitor, network, services, startup,
-                    tweaks)
+from .pages import cleaner, dashboard, game, history, monitor, network, services, startup, tweaks
 from .widgets import NavItem, TaskRunner, Toasts, button, confirm, label
 
 log = logging.getLogger(__name__)

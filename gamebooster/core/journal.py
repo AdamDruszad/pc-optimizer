@@ -7,10 +7,11 @@ A tervezett változást a napló a módosítás ELŐTT lemezre írja, és egy c�
 import logging
 import threading
 import winreg
+from collections.abc import Callable
 from dataclasses import asdict, dataclass, field
 from datetime import datetime
 from pathlib import Path
-from typing import Any, Callable
+from typing import Any
 
 import psutil
 

@@ -66,11 +66,11 @@ dist\
     │   ├── psutil\            ← Rendszer monitoring
     │   ├── python3xx.dll      ← Python DLL
     │   └── ...egyéb DLL-ek
-    └── (első indítás után):
-        ├── gamebooster.log    ← Log fájl
-        ├── profiles\          ← Mentett profilok
-        └── registry_snapshot.json  ← Ha volt registry boost
 ```
+
+Az írható adatok (változásnapló, beállítások, log) nem az exe mellé kerülnek, hanem a
+`%LOCALAPPDATA%\GameBooster` mappába. A v2.x exe mellett hagyott állapotfájlokat a v3 első
+indításkor átveszi az Előzményekbe.
 
 > ⚠ **Terjesztéshez az egész `dist\GameBooster\` mappát** kell átadni, nem csak az `.exe`-t! A DLL-ek nélkül nem indul el.
 

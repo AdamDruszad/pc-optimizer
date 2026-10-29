@@ -2,9 +2,9 @@
 import logging
 import queue
 import tkinter as tk
+from collections.abc import Callable
 from concurrent.futures import ThreadPoolExecutor
 from tkinter import ttk
-from typing import Callable
 
 import customtkinter as ctk
 
@@ -151,10 +151,11 @@ class Button(ctk.CTkButton):
 
 def button(master, text: str, command: Callable, kind: str = "secondary", **kw) -> Button:
     styles = {
-        "primary": dict(enabled_fg=theme.ACCENT, hover_color=theme.ACCENT_HOVER, text_color=theme.ON_ACCENT),
-        "danger": dict(enabled_fg=theme.DANGER, hover_color=theme.DANGER_HOVER, text_color="#1A0A09"),
-        "secondary": dict(enabled_fg=theme.SURFACE_2, hover_color=theme.BORDER, text_color=theme.TEXT,
-                          border_width=1, border_color=theme.BORDER),
+        "primary": {"enabled_fg": theme.ACCENT, "hover_color": theme.ACCENT_HOVER,
+                    "text_color": theme.ON_ACCENT},
+        "danger": {"enabled_fg": theme.DANGER, "hover_color": theme.DANGER_HOVER, "text_color": "#1A0A09"},
+        "secondary": {"enabled_fg": theme.SURFACE_2, "hover_color": theme.BORDER, "text_color": theme.TEXT,
+                      "border_width": 1, "border_color": theme.BORDER},
     }
     return Button(master, text=text, command=command, height=36, corner_radius=8,
                   font=theme.font(13, "bold" if kind != "secondary" else "normal"),

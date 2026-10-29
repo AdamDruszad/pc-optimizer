@@ -1,174 +1,94 @@
-# ⚡ PC Optimizer — Windows Game Booster
+# GameBooster: Windows game optimizer you can undo
 
-<div align="center">
+![Python](https://img.shields.io/badge/Python-3.11+-3776AB?logo=python&logoColor=white)
+![Windows](https://img.shields.io/badge/Windows-10%2F11-0078D4?logo=windows&logoColor=white)
+![License](https://img.shields.io/badge/License-MIT-green)
 
-![Python](https://img.shields.io/badge/Python-3.11+-3776AB?style=for-the-badge&logo=python&logoColor=white)
-![Windows](https://img.shields.io/badge/Windows-10%2F11-0078D4?style=for-the-badge&logo=windows&logoColor=white)
-![License](https://img.shields.io/badge/License-MIT-green?style=for-the-badge)
-![Status](https://img.shields.io/badge/Status-Active-00FF88?style=for-the-badge)
+A desktop app that applies only documented, checkable Windows optimizations, shows you the exact
+change list before it touches anything, and records every original value in a change journal so
+you can revert one change or all of them later.
 
-**A hardware-aware Windows game optimizer built with Python.**  
-Automatically detects your CPU, GPU and RAM — then applies the right optimizations for your specific setup.
+![Overview](docs/screenshots/overview.png)
 
-[Features](#features) · [Installation](#installation) · [How It Works](#how-it-works) · [Build](#build-from-source)
+## What it does
 
-</div>
+| Page | What it changes | How it is undone |
+|---|---|---|
+| **Game mode** | Performance power plan (Ultimate/High, or the Windows 11 "Best performance" power mode on Modern Standby laptops), HIGH priority for the game, BELOW_NORMAL for background apps you pick | Automatically when the game exits, when you stop the session, or when the app closes |
+| **Cleaner** | Deletes temp files older than 24 h, DirectX/NVIDIA/AMD shader caches, crash dumps, error reports, Delivery Optimization cache, component store cleanup (DISM) | Not revertable, so it scans first and shows sizes; never follows junctions, never touches documents or the Recycle Bin |
+| **Startup** | Turns startup apps on/off through `StartupApproved`, the same mechanism Task Manager uses | Journal, or toggle back |
+| **Services** | A fixed, risk-labelled allowlist (telemetry, Maps, Fax, SysMain, Search…) set to Manual instead of Disabled | Journal restores the original start type, including delayed start, and restarts services that were running |
+| **Tweaks** | Background recording off, windowed-game optimizations, HAGS, Windows Game Mode | Journal |
+| **Network** | DNS presets per adapter, DNS cache flush, TCP latency/jitter test | Journal |
+| **Monitor** | Nothing: CPU, RAM, GPU, VRAM, disk and network history from in-process PDH counters | — |
 
----
+Before the first change of a session the app asks Windows for a System Restore point as an extra,
+independent safety net.
 
-## Overview
+### What it deliberately does not do
 
-PC Optimizer is a desktop application that optimizes Windows for gaming by detecting your hardware profile and applying targeted tweaks — not generic one-size-fits-all changes.
+Version 2 shipped several tweaks that Windows ignores or overrides, or that hurt more than they
+help. Version 3 removed them:
 
-Unlike tools like Razer Cortex, it distinguishes between Intel iGPU, AMD iGPU, and Nvidia dedicated GPU setups, and applies different optimizations for each. It also monitors your system in real time.
+- **"RAM cleaning"** (`EmptyWorkingSet` on every process): Windows pages the memory straight back
+  in, which causes stutter.
+- **MMCSS `GPU Priority`, `SFIO Priority`**: Microsoft documents both as unused.
+- **`SystemResponsiveness = 0`**: values below 10 are reset to 20 by Windows.
+- **Nagle / `TCPNoDelay`, `MouseDataQueueSize`, `Win32PrioritySeparation`**: no measurable effect
+  for modern games.
+- **Disabling Windows Update or biometrics.**
 
-**Built as a portfolio project** to demonstrate Python desktop app development, Windows API integration, and hardware-aware software design.
+CPU core temperature needs a kernel driver (the WinRing0 driver used by many tools is flagged by
+Microsoft Defender). GameBooster installs no driver: it shows the ACPI thermal zone, and the GPU
+temperature on NVIDIA if `nvidia-ml-py` is installed.
 
----
-
-### Prewiew
-
-![](./screensh.png)
--
-![](./screensh1.png)
--
-![](./screenhs2.png)
-
-## Features
-
-### 🖥 Hardware Detection
-- Automatically identifies GPU type: Intel iGPU / AMD iGPU / AMD dedicated / Nvidia
-- Detects CPU brand and P+E core layout (Intel 12th gen hybrid architecture)
-- Recognizes power state (charger vs. battery)
-- Identifies active network type (Wi-Fi / Ethernet) with latency warning
-
-### 🚀 Boost Profiles
-- **Gaming** — stops non-essential services, High Performance power plan, max process priority
-- **Office** — minimal intervention, Balanced power plan
-- **Battery Saver** — extends battery life, suppresses background activity
-- **Custom profiles** — create and save your own (JSON persistence)
-
-### 🔑 Registry Optimizer
-8 proven registry tweaks with full backup/restore:
-
-| Tweak | Effect |
-|---|---|
-| MMCSS Games task priority | +3-10% FPS — Scheduling: Medium → High |
-| SystemResponsiveness | 100% CPU to the game (default: 80%) |
-| Win32PrioritySeparation | Max foreground CPU boost (+3-8% FPS) |
-| HAGS | Hardware Accelerated GPU Scheduling |
-| Windows Game Mode | Automatic resource prioritization |
-| Xbox Game Bar disable | +2-5% FPS (runs in background by default) |
-| Nagle algorithm disable | -5-15ms online game latency |
-| Mouse input buffer | Reduced input jitter |
-
-Every tweak saves the original value before applying — fully reversible.
-
-### 📊 Real-Time Monitoring
-- CPU utilization, temperature, clock speed — live sparkline charts
-- RAM usage and top memory consumers
-- Intel/AMD iGPU dedicated + shared memory via Windows PDH counters
-- GPU 3D engine utilization
-
-### 💾 RAM Manager
-- Working Set flush (frees RAM without killing processes)
-- Process priority elevation
-
----
-
-## Installation
-
-### Requirements
-- Python 3.11+
-- Windows 10 (build 2004+) or Windows 11
-
-### Run from source
+## Install and run
 
 ```bash
-git clone https://github.com/AdamDruszad/pc-optimizer.git
-cd pc-optimizer
-
 pip install -r requirements.txt
-
-# Run as Administrator for full functionality
 python main.py
 ```
 
-### Pre-built .exe
+Modifying features need Administrator rights; without them the app runs read-only and offers a
+"restart as admin" button. Data (journal, settings, log) lives in `%LOCALAPPDATA%\GameBooster`.
 
-Download from [Releases](https://github.com/AdamDruszad/pc-optimizer/releases).  
-The `.exe` requests Administrator rights automatically via UAC.
+Upgrading from 2.x: on first start, v3 imports the old `original_state.json` and
+`registry_snapshot.json` into the journal, so changes made by v2 can be reverted from **History**.
 
-> ⚠ **Antivirus note:** PyInstaller-compiled executables may trigger heuristic AV detection (false positive). The source code is fully open — build it yourself with `build.bat`.
-
----
-
-## How It Works
-
-```
-main.py
-├── hardware_detector.py    # WMI + psutil → GPU/CPU/RAM/Power/Network detection
-├── profile_manager.py      # JSON-based profile storage
-├── hw_optimizer.py         # Hardware-aware boost logic
-├── registry_tweaks.py      # 8 registry tweaks with snapshot/restore
-├── monitor.py              # Background system monitoring thread
-├── igpu_monitor.py         # Intel/AMD iGPU PDH counter monitoring
-├── ram_cleaner.py          # Working set flush via Windows API (ctypes)
-└── windows_optimizer.py    # Service management + power plans
-gui/
-├── app.py                  # CustomTkinter UI — 7 tabs
-└── app_paths.py            # PyInstaller-compatible path management
-```
-
-**Key technical decisions:**
-
-- **WMI over psutil for GPU detection** — psutil doesn't distinguish iGPU from dedicated GPU; WMI's `Win32_VideoController` does
-- **PDH counters for iGPU memory** — the only reliable way to read Intel UHD shared VRAM without a vendor SDK
-- **Registry snapshot before every tweak** — all changes saved to `registry_snapshot.json`, one-click restore
-- **Dynamic path management** — `app_paths.py` ensures writable files go next to the `.exe` when PyInstaller-frozen, not into the temp `_MEIPASS` directory
-
----
-
-## Tech Stack
-
-| Layer | Technology |
-|---|---|
-| Language | Python 3.11 |
-| GUI | CustomTkinter (modern dark-themed tkinter wrapper) |
-| System monitoring | psutil, WMI via PowerShell subprocess |
-| Windows API | ctypes, winreg, subprocess (sc.exe, powercfg) |
-| Performance counters | Windows PDH API |
-| Persistence | JSON |
-| Build | PyInstaller (onedir, UAC manifest) |
-
----
-
-## Build from Source
+## Build
 
 ```cmd
-build.bat           :: Full build (venv + install + compile)
-build.bat --fast    :: Recompile only
-build.bat --clean   :: Clean build artifacts
+build.bat           :: venv + dependencies + PyInstaller -> dist\GameBooster\GameBooster.exe
 ```
 
-Output: `dist\GameBooster\GameBooster.exe`
+Details: [BUILD_GUIDE.md](BUILD_GUIDE.md)
 
-Full instructions: [BUILD_GUIDE.md](BUILD_GUIDE.md)
+## Development
 
----
+```bash
+pip install -e ".[dev]"
+pytest
+ruff check gamebooster tests main.py
+```
 
-## Project Background
+Tests never touch the real system: Windows calls are replaced with fakes. Don't run apply paths on
+your development machine to "try" them; use Windows Sandbox or a VM.
 
-Built for my own laptop (Intel i7-12650H, 32GB RAM, Intel UHD Graphics) and evolved into a full portfolio project. The iGPU-specific optimizations — particularly the working set flush to increase shared GPU memory — came from diagnosing my own frame drops in CS2.
+```
+gamebooster/
+├── core/          journal (change records + revert), winapi, storage, restore point, v2 import
+├── optimizers/    each module only *plans* changes: power, tweaks, services, game_mode,
+│                  cleaner, startup, network
+├── monitoring/    sampler thread (psutil + PDH), hardware info from the registry
+└── ui/            CustomTkinter shell, design tokens, task runner, pages/
+```
 
----
+## Screenshots
+
+| Cleaner | Tweaks | Monitor |
+|---|---|---|
+| ![Cleaner](docs/screenshots/cleaner.png) | ![Tweaks](docs/screenshots/tweaks.png) | ![Monitor](docs/screenshots/monitor.png) |
 
 ## License
 
-MIT — free to use, modify and distribute.
-
----
-
-<div align="center">
-Made by <a href="https://github.com/AdamDruszad">AdamDruszad</a>
-</div>
+MIT. Made by [AdamDruszad](https://github.com/AdamDruszad).

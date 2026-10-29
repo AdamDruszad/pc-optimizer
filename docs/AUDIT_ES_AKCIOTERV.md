@@ -3,7 +3,17 @@
 - **Dátum:** 2026-10-29
 - **Vizsgált állapot:** `main` @ `0f7c1e7`, 18 Python fájl, kb. 5500 sor
 - **Módszer:** teljes kódolvasás, a gyanús pontok élő ellenőrzése ezen a gépen (Windows 11 26300, hu-HU), csak olvasó parancsokkal. Semmilyen boost vagy tweak nem futott.
-- **Állapot:** javaslat. A 4. fázist (implementáció) csak a jóváhagyásod után kezdem.
+- **Állapot:** jóváhagyva és végrehajtva (2026-10-29), a 6. pont javasolt döntéseivel.
+
+## Végrehajtás
+
+| Lépés | Ág | Eredmény |
+|---|---|---|
+| 4a hotfix (v2.1.1) | `fix/v2.1.1-restore-safety` | K1-K11, M1, M4, M10 javítva a v2 kódon, 11 teszttel |
+| 4b-4f (v3.0.0) | `refactor/v3` (a hotfix ágból) | Új `gamebooster/` csomag változásnaplóval, 9 oldalas UI, a v2 kód és az `osszes_kod.txt` törölve, 24 teszt, ruff, CI |
+
+A rendszert módosító útvonalakat valódi gépen nem futtattuk, csak hamisított Windows-hívásokkal
+tesztelve. Az élesítés előtti próba Windows Sandboxban vagy VM-ben javasolt.
 
 ---
 

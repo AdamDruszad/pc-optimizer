@@ -4,7 +4,8 @@ import winreg
 
 import pytest
 
-from gamebooster.core import journal as jmod, legacy, storage
+from gamebooster.core import journal as jmod
+from gamebooster.core import legacy, storage
 from gamebooster.core.journal import Change, Journal
 
 

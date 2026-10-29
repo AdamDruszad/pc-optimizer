@@ -7,7 +7,7 @@ import time
 import psutil
 import pytest
 
-from gamebooster.core.journal import Change, Journal
+from gamebooster.core.journal import Journal
 from gamebooster.optimizers import cleaner, game_mode, network, startup
 
 

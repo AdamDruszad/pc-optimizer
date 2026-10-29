@@ -4,7 +4,7 @@ import customtkinter as ctk
 
 from ...core import restore_point, storage
 from .. import theme
-from ..widgets import Page, button, card, label, table
+from ..widgets import Page, button, card, table
 
 
 class HistoryPage(Page):

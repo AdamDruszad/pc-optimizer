@@ -5,7 +5,7 @@ a felhasználó által kijelölt háttérappok BELOW_NORMAL prioritása. Rendsze
 """
 import logging
 import threading
-from typing import Callable
+from collections.abc import Callable
 
 import psutil
 

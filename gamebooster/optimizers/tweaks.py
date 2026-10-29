@@ -5,8 +5,8 @@ a Nagle- és az egér-puffer tweak kikerült: a Windows ezeket figyelmen kívül
 illetve mérhető hatásuk nincs.
 """
 import winreg
+from collections.abc import Callable
 from dataclasses import dataclass
-from typing import Callable
 
 from ..core import winapi
 from ..core.journal import Change, registry_change
