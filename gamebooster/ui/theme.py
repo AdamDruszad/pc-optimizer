@@ -1,7 +1,17 @@
 """Színek, betűk és ikonok egy helyen. A widgetek csak ezeket a tokeneket használják."""
+import sys
 import tkinter.font as tkfont
+from pathlib import Path
 
 import customtkinter as ctk
+
+# Az alkalmazásikon: a PyInstaller-csomagban a _MEIPASS alatt, forrásból a repó gyökerében
+APP_ICON = Path(getattr(sys, "_MEIPASS", Path(__file__).resolve().parents[2])) / "assets" / "icon.ico"
+
+
+def set_window_icon(window) -> None:
+    if APP_ICON.exists():
+        window.iconbitmap(str(APP_ICON))
 
 BG = "#0F1115"
 SURFACE = "#171A21"

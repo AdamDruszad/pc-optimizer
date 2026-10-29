@@ -90,6 +90,7 @@ def confirm(root: tk.Misc, title: str, lines: list[str], note: str = "",
             ok_text: str = "Alkalmazás", danger: bool = False) -> bool:
     """Modális megerősítés a változások listájával. Esc: mégse, Enter: rendben."""
     win = ctk.CTkToplevel(root, fg_color=theme.SURFACE)
+    theme.set_window_icon(win)  # különben a CTk a saját alapikonját teszi ki
     win.title(title)
     win.transient(root)
     win.resizable(False, False)

@@ -50,8 +50,10 @@ puts the app in `Program Files`, adds it to the Start menu (type "GameBooster" i
 optionally adds it to `PATH` (then `gamebooster` works in any terminal) and registers an uninstaller
 in **Settings → Apps**. No Python needed. A portable zip is attached to the release too.
 
-The exe is not code-signed yet, so on first launch Windows SmartScreen may show "Windows protected
-your PC": click **More info → Run anyway**.
+The exe is not code-signed yet (see the [code signing policy](CODE_SIGNING_POLICY.md)), so on first
+launch Windows SmartScreen may show "Windows protected your PC": click **More info → Run anyway**.
+If Smart App Control is turned on, Windows blocks unsigned apps without that option; signed builds
+will fix this.
 
 Data (journal, settings, log) lives in `%LOCALAPPDATA%\GameBooster`. Uninstalling keeps it, so
 changes stay revertable after a reinstall; revert them in **History** before uninstalling if you
@@ -108,6 +110,12 @@ gamebooster/
 | Cleaner | Tweaks | Monitor |
 |---|---|---|
 | ![Cleaner](docs/screenshots/cleaner.png) | ![Tweaks](docs/screenshots/tweaks.png) | ![Monitor](docs/screenshots/monitor.png) |
+
+## Code signing policy
+
+Signed releases will use free code signing provided by [SignPath.io](https://about.signpath.io/),
+certificate by [SignPath Foundation](https://signpath.org/). Team roles, what gets signed and the
+privacy statement: [CODE_SIGNING_POLICY.md](CODE_SIGNING_POLICY.md).
 
 ## License
 

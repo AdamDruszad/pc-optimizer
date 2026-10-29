@@ -44,6 +44,7 @@ class App(ctk.CTk):
     def __init__(self):
         super().__init__(fg_color=theme.BG)
         theme.init(self)
+        theme.set_window_icon(self)
         self.title("GameBooster")
         width, height, x, y = window_geometry(self.winfo_screenwidth(), self.winfo_screenheight(),
                                               self._get_window_scaling())

@@ -25,6 +25,36 @@ jobs:
           python -c "import gamebooster, sys; sys.exit(gamebooster.__version__ != '$version')"
           if ($LASTEXITCODE) { throw "A tag ($version) nem egyezik a gamebooster/__init__.py verziójával" }
       - run: pyinstaller GameBooster.spec --noconfirm --clean
+
+      # ── Kódaláírás (SignPath Foundation) ─────────────────────────
+      # Csak akkor fut, ha a repóban be van állítva a SIGNPATH_ORGANIZATION_ID változó és a
+      # SIGNPATH_API_TOKEN titok (Settings → Secrets and variables → Actions); addig aláíratlan a kiadás.
+      - name: Aláíratlan app feltöltése aláírásra
+        if: vars.SIGNPATH_ORGANIZATION_ID != ''
+        id: unsigned-app
+        uses: actions/upload-artifact@v7
+        with:
+          name: unsigned-app
+          path: dist/GameBooster/
+      - name: App aláírása (SignPath)
+        if: vars.SIGNPATH_ORGANIZATION_ID != ''
+        uses: signpath/github-action-submit-signing-request@v3
+        with:
+          api-token: ${{ secrets.SIGNPATH_API_TOKEN }}
+          organization-id: ${{ vars.SIGNPATH_ORGANIZATION_ID }}
+          project-slug: gamebooster
+          signing-policy-slug: release-signing
+          artifact-configuration-slug: app
+          github-artifact-id: ${{ steps.unsigned-app.outputs.artifact-id }}
+          wait-for-completion: true
+          output-artifact-directory: dist/GameBooster-signed
+      - name: Aláírt app a helyére
+        if: vars.SIGNPATH_ORGANIZATION_ID != ''
+        shell: pwsh
+        run: |
+          Remove-Item dist\GameBooster -Recurse -Force
+          Move-Item dist\GameBooster-signed dist\GameBooster
+
       - name: Telepítő és hordozható zip
         shell: pwsh
         run: |
@@ -33,11 +63,38 @@ jobs:
           & "${env:ProgramFiles(x86)}\Inno Setup 6\ISCC.exe" /Q "/DAppVersion=$version" installer\GameBooster.iss
           if ($LASTEXITCODE) { throw "Az Inno Setup fordítás sikertelen" }
           Compress-Archive -Path dist\GameBooster\* -DestinationPath "dist\GameBooster-$version-portable.zip"
+
+      - name: Aláíratlan telepítő feltöltése aláírásra
+        if: vars.SIGNPATH_ORGANIZATION_ID != ''
+        id: unsigned-setup
+        uses: actions/upload-artifact@v7
+        with:
+          name: unsigned-setup
+          path: dist/GameBooster-Setup-*.exe
+      - name: Telepítő aláírása (SignPath)
+        if: vars.SIGNPATH_ORGANIZATION_ID != ''
+        uses: signpath/github-action-submit-signing-request@v3
+        with:
+          api-token: ${{ secrets.SIGNPATH_API_TOKEN }}
+          organization-id: ${{ vars.SIGNPATH_ORGANIZATION_ID }}
+          project-slug: gamebooster
+          signing-policy-slug: release-signing
+          artifact-configuration-slug: installer
+          github-artifact-id: ${{ steps.unsigned-setup.outputs.artifact-id }}
+          wait-for-completion: true
+          output-artifact-directory: dist/setup-signed
+      - name: Aláírt telepítő a helyére
+        if: vars.SIGNPATH_ORGANIZATION_ID != ''
+        shell: pwsh
+        run: Move-Item dist\setup-signed\GameBooster-Setup-*.exe dist\ -Force
+
       - name: GitHub Release
         shell: pwsh
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
           $version = "${{ github.ref_name }}".TrimStart("v")
+          $policy = "https://github.com/${{ github.repository }}/blob/main/CODE_SIGNING_POLICY.md"
           gh release create "${{ github.ref_name }}" "dist\GameBooster-Setup-$version.exe" `
-            "dist\GameBooster-$version-portable.zip" --title "GameBooster $version" --generate-notes
+            "dist\GameBooster-$version-portable.zip" --title "GameBooster $version" `
+            --notes "[Code signing policy]($policy)" --generate-notes
