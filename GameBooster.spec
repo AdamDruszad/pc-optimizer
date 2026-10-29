@@ -21,8 +21,34 @@
 import os
 import sys
 from PyInstaller.utils.hooks import collect_data_files, collect_submodules
+from PyInstaller.utils.win32.versioninfo import (
+    FixedFileInfo, StringFileInfo, StringStruct, StringTable, VarFileInfo, VarStruct, VSVersionInfo,
+)
 
 block_cipher = None
+
+# ── Verzióinformáció (Fájl tulajdonságai → Részletek) ─────────
+# Egy forrásból, a gamebooster.__version__-ből: a kiadás és az exe verziója mindig egyezik
+sys.path.insert(0, SPECPATH)
+from gamebooster import __version__ as APP_VERSION  # noqa: E402
+
+_numeric = tuple(int(p) for p in APP_VERSION.split(".")) + (0,)
+version_info = VSVersionInfo(
+    ffi=FixedFileInfo(filevers=_numeric, prodvers=_numeric),
+    kids=[
+        StringFileInfo([StringTable("040904B0", [
+            StringStruct("CompanyName", "AdamDruszad"),
+            StringStruct("FileDescription", "GameBooster"),
+            StringStruct("FileVersion", APP_VERSION),
+            StringStruct("InternalName", "GameBooster"),
+            StringStruct("LegalCopyright", "MIT License"),
+            StringStruct("OriginalFilename", "GameBooster.exe"),
+            StringStruct("ProductName", "GameBooster"),
+            StringStruct("ProductVersion", APP_VERSION),
+        ])]),
+        VarFileInfo([VarStruct("Translation", [0x0409, 1200])]),
+    ],
+)
 
 # ── Adatfájlok összegyűjtése ──────────────────────────────────
 
@@ -35,9 +61,7 @@ except Exception:
 
 # Az összes adat amit be kell csomagolni
 datas = ctk_datas + [
-    # (forrás, cél a bundle-ben)
-    # Ha lenne ikon fájl:
-    # ("assets/icon.ico", "assets"),
+    ("assets/icon.ico", "assets"),  # az ablak címsor-ikonjához
 ]
 
 # ── Hidden imports ────────────────────────────────────────────
@@ -138,7 +162,7 @@ exe = EXE(
     debug=False,
     bootloader_ignore_signals=False,
     strip=False,
-    upx=True,                       # UPX tömörítés (ha telepítve van)
+    upx=False,                      # UPX-tömörített exe-t a vírusirtók gyakrabban gyanúsítanak
     console=False,                  # Nincs fekete CMD ablak
     disable_windowed_traceback=False,
     target_arch=None,
@@ -146,8 +170,8 @@ exe = EXE(
     entitlements_file=None,
     uac_admin=True,                 # ← FONTOS: automatikus admin UAC prompt
     uac_uiaccess=False,
-    # icon="assets\\icon.ico",      # Ikon (ha van)
-    version_info=None,
+    icon="assets/icon.ico",
+    version=version_info,
 )
 
 # ── COLLECT (onedir csomag) ───────────────────────────────────
@@ -158,7 +182,7 @@ coll = COLLECT(
     a.zipfiles,
     a.datas,
     strip=False,
-    upx=True,
+    upx=False,
     upx_exclude=[],
     name="GameBooster",             # dist\GameBooster\ mappa neve
 )

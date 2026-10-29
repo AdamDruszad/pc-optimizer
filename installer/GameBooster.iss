@@ -30,6 +30,13 @@ OutputBaseFilename=GameBooster-Setup-{#AppVersion}
 Compression=lzma2
 SolidCompression=yes
 WizardStyle=modern
+SetupIconFile=..\assets\icon.ico
+; Fájl tulajdonságai → Részletek a telepítőn is
+VersionInfoCompany=AdamDruszad
+VersionInfoDescription=GameBooster telepítő
+VersionInfoProductName=GameBooster
+VersionInfoVersion={#AppVersion}
+VersionInfoCopyright=MIT License
 
 [Languages]
 Name: "hungarian"; MessagesFile: "compiler:Languages\Hungarian.isl"
