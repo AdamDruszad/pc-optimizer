@@ -13,5 +13,5 @@ jobs:
         with:
           python-version: "3.12"
       - run: pip install -r requirements.txt pytest ruff
-      - run: ruff check gamebooster tests main.py
+      - run: ruff check gamebooster tests scripts main.py
       - run: pytest -q

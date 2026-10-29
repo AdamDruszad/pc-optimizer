@@ -14,6 +14,7 @@ python main.py                         :: modifying features need an elevated sh
 pytest                                 :: all tests
 pytest tests/test_journal.py::test_second_apply_keeps_first_original
 ruff check gamebooster tests main.py
+python scripts\system_test.py out_dir  :: REAL system changes + revert; non-admin runs only the HKCU part. Admin part: Windows Sandbox/VM only
 build.bat                              :: PyInstaller onedir build -> dist\GameBooster\GameBooster.exe (uac_admin)
 ```
 
