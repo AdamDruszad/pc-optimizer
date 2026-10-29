@@ -93,8 +93,11 @@ class Sampler(threading.Thread):
                 if query:
                     c = query.collect()
                     s.gpu = pdh.gpu_utilization(c.get("gpu_3d", {}))
-                    if c.get("gpu_ded"):
-                        s.gpu_mem_gb = max(c["gpu_ded"].values()) / _GB
+                    dedicated = max(c.get("gpu_ded", {}).values(), default=0.0)
+                    shared = max(c.get("gpu_shared", {}).values(), default=0.0)
+                    if dedicated or shared:
+                        # Integrált GPU-nak nincs saját VRAM-ja: ott a megosztott memória számít
+                        s.gpu_mem_gb = (dedicated if dedicated > 64 * _MB else shared) / _GB
                     kelvins = [k for k in c.get("thermal", {}).values() if 250 < k < 400]
                     if kelvins:
                         s.temp_c = max(kelvins) - 273.15

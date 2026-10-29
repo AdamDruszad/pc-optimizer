@@ -83,11 +83,13 @@ class GameWatcher(threading.Thread):
     def stop(self) -> None:
         self._stop_event.set()
 
-    def start_session(self, game: psutil.Process | None) -> Outcome:
+    def start_session(self, game: psutil.Process | None, changes: list[Change] | None = None,
+                      notify: bool = True) -> Outcome:
         with self._lock:
-            out = self.journal.apply(plan(self.settings(), game))
+            out = self.journal.apply(plan(self.settings(), game) if changes is None else changes)
             self.game, self.active = game, True
-        self.on_change("start", self._game_name(game), out)
+        if notify:
+            self.on_change("start", self._game_name(game), out)
         return out
 
     def end_session(self) -> Outcome:
