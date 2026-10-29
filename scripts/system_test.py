@@ -220,12 +220,22 @@ def hklm_tweaks():
             _tweak_round_trip(t, journal(f"tweak-{t.key}"))
 
 
+def _service_state(name: str):
+    # A nyers Start és DelayedAutostart is számít: a pontos visszaállítást ellenőrizzük
+    path = rf"SYSTEM\CurrentControlSet\Services\{name}"
+    return (raw("HKLM", path, "Start")[0], raw("HKLM", path, "DelayedAutostart")[0],
+            winapi.service_running(name))
+
+
 @test(admin=True)
 def services_round_trip():
     names = [s.name for s in services.SERVICES]
-    before = {n: (winapi.service_start_type(n), winapi.service_running(n)) for n in names}
+    before = {n: _service_state(n) for n in names}
+    disabled = [n for n in names if winapi.service_start_type(n) == "disabled"]
     j = journal("services")
     changes = services.plan(names)
+    check("szolgáltatások: a már letiltottakhoz nem nyúl",
+          not {c.meta["name"] for c in changes} & set(disabled), disabled)
     out = j.apply(changes)
     check("szolgáltatások: alkalmazás", not out.failed and changes, out.summary("alkalmazva"))
     wrong = {c.meta["name"]: winapi.service_start_type(c.meta["name"]) for c in changes
@@ -236,7 +246,7 @@ def services_round_trip():
     diff = {}
     for _ in range(10):  # a szolgáltatások indulása aszinkron
         time.sleep(2)
-        after = {n: (winapi.service_start_type(n), winapi.service_running(n)) for n in names}
+        after = {n: _service_state(n) for n in names}
         diff = {n: (before[n], after[n]) for n in names if before[n] != after[n]}
         if not diff:
             break

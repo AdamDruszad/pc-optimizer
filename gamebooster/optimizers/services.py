@@ -51,15 +51,21 @@ def status() -> list[tuple[ServiceInfo, str | None, bool]]:
     return [(s, winapi.service_start_type(s.name), winapi.service_running(s.name)) for s in SERVICES]
 
 
+def needs_change(current: str | None, target: str) -> bool:
+    # A már letiltott szolgáltatást nem állítjuk vissza „Kézi”-re: az visszakapcsolná
+    return current not in (None, target, "disabled")
+
+
 def plan(names: list[str]) -> list[Change]:
     changes = []
     for name in names:
         info = BY_NAME[name]  # KeyError: engedélylistán kívüli név
         current = winapi.service_start_type(name)
-        if current is None or current == info.target:
+        if not needs_change(current, info.target):
             continue
         changes.append(Change(
             "service", f"service:{name}", current, info.target,
             f"{info.label}: {START_LABELS[current]} → {START_LABELS[info.target]}", "services",
-            meta={"name": name, "stop": True, "was_running": winapi.service_running(name)}))
+            meta={"name": name, "stop": True, "was_running": winapi.service_running(name),
+                  "delayed": winapi.service_delayed_flag(name)}))
     return changes

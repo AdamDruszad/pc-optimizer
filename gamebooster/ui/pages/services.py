@@ -33,7 +33,7 @@ class ServicesPage(Page):
             r.pack(fill="x", pady=3)
             r.columnconfigure(3, weight=1)
             journaled = self.app.journal.find(f"service:{info.name}")
-            done = current == info.target
+            done = current is not None and not services.needs_change(current, info.target)
             var = ctk.BooleanVar(value=False)
             ctk.CTkCheckBox(r, text=info.label, variable=var, font=theme.font(13, "bold"), width=300,
                             text_color=theme.TEXT, fg_color=theme.ACCENT, hover_color=theme.ACCENT_HOVER,

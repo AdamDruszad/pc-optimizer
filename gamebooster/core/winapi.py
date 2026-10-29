@@ -123,6 +123,19 @@ def set_service_start(name: str, start: str) -> None:
         raise OSError(out or f"sc config {name} sikertelen")
 
 
+def service_delayed_flag(name: str) -> int | None:
+    return reg_read("HKLM", rf"SYSTEM\CurrentControlSet\Services\{name}", "DelayedAutostart")[0]
+
+
+def set_service_delayed_flag(name: str, value: int | None) -> None:
+    """Az `sc config start=` nullázza a DelayedAutostart-ot; az eredetit közvetlenül írjuk vissza."""
+    path = rf"SYSTEM\CurrentControlSet\Services\{name}"
+    if value is None:
+        reg_delete("HKLM", path, "DelayedAutostart")
+    else:
+        reg_write("HKLM", path, "DelayedAutostart", value, winreg.REG_DWORD)
+
+
 def service_running(name: str) -> bool:
     try:
         return psutil.win_service_get(name).status() == "running"
