@@ -15,7 +15,7 @@ ez sem ad, az a letöltésekkel épül fel, de a teljes tiltás megszűnik.
 
 A <https://signpath.org/apply> oldalon. Hasznos válaszok:
 
-- **Projekt:** GameBooster, <https://github.com/AdamDruszad/pc-optimizer>, MIT-licenc.
+- **Projekt:** GameBooster, <https://github.com/AdamDruszad/pc-optimizer>, GPLv3-licenc.
 - **Mit csinál:** Windows-optimalizáló játékosoknak; minden rendszermódosítást megerősítés után,
   változásnaplóval végez, és bármikor visszaállít. Nincs telemetria.
 - **Build:** GitHub Actions (`release.yml`), PyInstaller + Inno Setup; a kiadásokat egy verziótag

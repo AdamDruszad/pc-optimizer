@@ -41,7 +41,7 @@ version_info = VSVersionInfo(
             StringStruct("FileDescription", "GameBooster"),
             StringStruct("FileVersion", APP_VERSION),
             StringStruct("InternalName", "GameBooster"),
-            StringStruct("LegalCopyright", "MIT License"),
+            StringStruct("LegalCopyright", "Copyright (C) 2026 AdamDruszad, GPLv3"),
             StringStruct("OriginalFilename", "GameBooster.exe"),
             StringStruct("ProductName", "GameBooster"),
             StringStruct("ProductVersion", APP_VERSION),
