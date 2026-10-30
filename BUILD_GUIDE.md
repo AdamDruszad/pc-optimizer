@@ -26,7 +26,7 @@ Dupla klikk: build.bat
 A szkript elvégzi:
 1. Python verzió ellenőrzés
 2. Virtuális környezet (`.venv`) létrehozása
-3. `customtkinter`, `psutil`, `pyinstaller` telepítése
+3. Függőségek (`requirements.txt`: PySide6, qfluentwidgets, psutil) és `pyinstaller` telepítése
 4. Régi build törlése
 5. PyInstaller fordítás
 6. Eredmény ellenőrzése
@@ -47,7 +47,7 @@ python -m venv .venv
 .venv\Scripts\activate
 
 :: 2. Telepítés
-pip install customtkinter psutil pyinstaller
+pip install -r requirements.txt pyinstaller
 
 :: 3. Build
 pyinstaller GameBooster.spec --noconfirm --clean
@@ -62,7 +62,7 @@ dist\
 └── GameBooster\
     ├── GameBooster.exe        ← Ez az indítható fájl
     ├── _internal\             ← Python runtime + modulok
-    │   ├── customtkinter\     ← GUI könyvtár + témák
+    │   ├── PySide6\           ← Qt (felület)
     │   ├── psutil\            ← Rendszer monitoring
     │   ├── python3xx.dll      ← Python DLL
     │   └── ...egyéb DLL-ek
@@ -94,10 +94,10 @@ build.bat --clean      :: Csak törli a régi build fájlokat
 
 ### Hibaelhárítás
 
-**`ModuleNotFoundError: No module named 'customtkinter'`**
+**`ModuleNotFoundError: No module named 'qfluentwidgets'`**
 ```cmd
 .venv\Scripts\activate
-pip install customtkinter psutil pyinstaller
+pip install -r requirements.txt pyinstaller
 pyinstaller GameBooster.spec --noconfirm
 ```
 
@@ -108,18 +108,12 @@ dist\GameBooster\GameBooster.exe
 ```
 
 **Az exe mérete túl nagy (>150MB)**
-- Normális — a Python runtime ~60MB, a customtkinter ~30MB
+- Normális — a Python runtime és a Qt együtt ~100 MB
 - Ha csökkenteni akarod: `pip install pyinstaller[encrypt]` + UPX telepítés
 
 **`Access is denied` a registrynél**
 - Az .exe nem kapott admin jogot
 - Ellenőrizd: `GameBooster.spec` → `uac_admin=True`
-
-**customtkinter témák nem töltődnek be (szürke ablak)**
-```cmd
-:: Ellenőrizd hogy a collect_data_files fut a .spec-ben:
-python -c "from PyInstaller.utils.hooks import collect_data_files; print(collect_data_files('customtkinter'))"
-```
 
 ---
 
@@ -176,7 +170,7 @@ Double-click: build.bat
 The script will:
 1. Check Python version
 2. Create virtual environment (`.venv`)
-3. Install `customtkinter`, `psutil`, `pyinstaller`
+3. Install `requirements.txt` (PySide6, qfluentwidgets, psutil) and `pyinstaller`
 4. Delete old build
 5. Run PyInstaller
 6. Verify result
@@ -192,7 +186,7 @@ cd C:\GameBooster
 
 python -m venv .venv
 .venv\Scripts\activate
-pip install customtkinter psutil pyinstaller
+pip install -r requirements.txt pyinstaller
 pyinstaller GameBooster.spec --noconfirm --clean
 ```
 
@@ -219,12 +213,6 @@ build.bat --clean      :: Clean build artifacts only
 ---
 
 ### Troubleshooting
-
-**App shows grey window / themes missing**
-```cmd
-python -c "from PyInstaller.utils.hooks import collect_data_files; print(collect_data_files('customtkinter'))"
-```
-If empty, manually add customtkinter's asset folder to `datas` in the spec.
 
 **`Failed to execute script main` on launch**
 Run from CMD to see the error:

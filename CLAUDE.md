@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## What this is
 
-GameBooster (repo name `pc-optimizer`): a Windows-only CustomTkinter desktop app that changes system state (power plan, services, registry, process priorities, DNS) for gaming, and records every original value so it can be reverted. Python 3.11+, runtime deps are only `customtkinter` and `psutil`; Windows access is stdlib (`winreg`, `ctypes`, `subprocess`). UI text, comments and logs are Hungarian; README is English.
+GameBooster (repo name `pc-optimizer`): a Windows-only PySide6 + qfluentwidgets (Fluent Design) desktop app that changes system state (power plan, services, registry, process priorities, DNS) for gaming, and records every original value so it can be reverted. Python 3.11+, runtime deps are `PySide6`, `PySide6-Fluent-Widgets` (GPLv3, without the `[full]` extra) and `psutil`; Windows access is stdlib (`winreg`, `ctypes`, `subprocess`). UI text, comments and logs are Hungarian; README is English.
 
 ## Commands
 
@@ -14,6 +14,7 @@ python main.py                         :: modifying features need an elevated sh
 pytest                                 :: all tests
 pytest tests/test_journal.py::test_second_apply_keeps_first_original
 ruff check gamebooster tests scripts main.py
+python scripts\preview_ui.py [out.png] [--theme dark|light]  :: cycles all pages, saves a screenshot, exits
 python scripts\system_test.py out_dir  :: REAL system changes + revert; non-admin runs only the HKCU part. Admin part: Windows Sandbox/VM only
 build.bat                              :: PyInstaller onedir build -> dist\GameBooster\GameBooster.exe (uac_admin), then the installer if Inno Setup 6 exists
 iscc /DAppVersion=3.0.0 installer\GameBooster.iss   :: -> dist\GameBooster-Setup-3.0.0.exe (Start menu, optional PATH, uninstaller)
@@ -30,12 +31,15 @@ The core rule: **optimizers only plan, the journal applies.** Every optimizer re
 - `core/legacy.py`: imports v2.x state files (`original_state.json`, `registry_snapshot.json`) from the exe/repo dir into the journal on startup.
 - `optimizers/`: `power`, `tweaks` (declarative `Tweak`/`RegValue`, with `default` = the value Windows assumes when the registry value is missing), `services` (fixed allowlist; unknown names raise), `game_mode` (`GameWatcher` thread, session entries use source `game_mode` and are reverted on game exit and app close), `cleaner` (scan → preview → delete; refuses junction/reparse-point paths because it runs elevated), `startup` (StartupApproved bytes like Task Manager), `network`.
 - `monitoring/sampler.py`: one thread, psutil + PDH counters via `monitoring/pdh.py` (`PdhAddEnglishCounterW`, so it works on localized Windows). The UI reads `sampler.latest` / `sampler.history`; the thread never touches widgets.
-- `ui/app.py`: sidebar shell. `App.apply(changes, title)` = confirm dialog with the change labels → restore point on the first change → `journal.apply` in a worker. All background work goes through `widgets.TaskRunner` (thread pool + queue pumped by `after(50)`); only the Tk thread touches widgets. Colors/fonts/icons come from `ui/theme.py` tokens (Segoe Fluent Icons code points, no emoji).
+- `ui/main_window.py`: `FluentWindow` shell; one page per file in `ui/views/`, each a `components.Page` with `build()` / `on_show()` / `on_tick()` (1 s timer, current page only). `MainWindow.apply(changes, title)` = confirm dialog with the change labels → restore point on the first change → `journal.apply` in a worker. All background work goes through `ui/tasks.run_task` (QRunnable on the global thread pool, results back via Signals); only the GUI thread touches widgets, and the `GameWatcher` thread reports through the `MainWindow.gameEvent` signal.
+- `ui/theme.py`: emerald palette as `DARK` / `LIGHT` dicts, read with `tok(name)` (current theme) or `pair(name)` (light, dark) for qfluentwidgets' `setTextColor` / `InfoBadge.custom`. Never hard-code colors in views; `tests/test_ui_theme.py` checks every text pair for WCAG AA. Mica is off on purpose: it replaces the window background with a wallpaper tint. Light accent is `#047857` (white button text needs AA).
+- `ui/components.py`: shared widgets (`Surface` card, `HeroCard`, `MetricCard` + `Sparkline`, `SwitchRow`, `list_row`, `ConfirmDialog`). Use qfluentwidgets controls, not raw Qt ones (`~/.claude/skills/pyside6-fluent-ui/scripts/lint_fluent.py` checks).
 
 ## Working rules for this repo
 
 - Apply paths change the developer's real machine. Don't run them to "test"; tests use fakes (`monkeypatch` on `winapi` functions or `journal.HANDLERS`). Read-only calls (registry reads, `powercfg /list`, `sc qc`, scans) are fine.
 - Planning functions must have no side effects (see `test_power_plan_has_no_side_effects`).
 - Don't add tweaks without a documented, checkable effect; README lists what was removed and why.
+- qfluentwidgets 1.11.3 quirks: `SettingCard` is fixed 70 px tall with English On/Off (use `components.SwitchRow` for toggles), `InfoBar(...)` defaults to `TOP_RIGHT` (pass `position=InfoBarPosition.NONE` when it sits in a layout), an empty `CheckBox` takes 57 px (`setFixedWidth(28)`), `ExpandGroupSettingCard` has no `setContent`.
 - `threading.Thread` subclasses: don't name attributes `_stop` or `_name` (they shadow Thread internals).
 - `docs/AUDIT_ES_AKCIOTERV.md` is the audit that drove the v3 rewrite.

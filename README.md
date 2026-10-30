@@ -91,6 +91,7 @@ Details: [BUILD_GUIDE.md](BUILD_GUIDE.md)
 pip install -e ".[dev]"
 pytest
 ruff check gamebooster tests main.py
+python scripts/preview_ui.py --theme dark   # cycles every page, saves refined_green_preview.png
 ```
 
 Tests never touch the real system: Windows calls are replaced with fakes. Don't run apply paths on
@@ -102,7 +103,7 @@ gamebooster/
 ├── optimizers/    each module only *plans* changes: power, tweaks, services, game_mode,
 │                  cleaner, startup, network
 ├── monitoring/    sampler thread (psutil + PDH), hardware info from the registry
-└── ui/            CustomTkinter shell, design tokens, task runner, pages/
+└── ui/            PySide6 + qfluentwidgets (Fluent Design) window, emerald theme, task runner, views/
 ```
 
 ## Screenshots

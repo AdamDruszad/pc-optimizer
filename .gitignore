@@ -36,3 +36,6 @@ $RECYCLE.BIN/
 
 # macOS
 .DS_Store
+
+# Felület-előnézet (scripts/preview_ui.py)
+refined_green_preview.png

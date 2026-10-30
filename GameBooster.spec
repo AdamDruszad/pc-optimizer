@@ -15,12 +15,12 @@
 #   - onedir mód (nem onefile): gyorsabb indítás, nincs temp kicsomagolás
 #   - uac_admin=True: Windows automatikusan kér admin jogot indításkor
 #   - console=False: nincs fekete CMD ablak
-#   - A customtkinter assets (témák, fontok) manuálisan be kell másolni
+#   - A Qt-t a PyInstaller saját PySide6-hookja gyűjti; a qfluentwidgets erőforrásai Python-modulban vannak
 # ─────────────────────────────────────────────────────────────
 
 import os
 import sys
-from PyInstaller.utils.hooks import collect_data_files, collect_submodules
+from PyInstaller.utils.hooks import collect_submodules
 from PyInstaller.utils.win32.versioninfo import (
     FixedFileInfo, StringFileInfo, StringStruct, StringTable, VarFileInfo, VarStruct, VSVersionInfo,
 )
@@ -52,15 +52,7 @@ version_info = VSVersionInfo(
 
 # ── Adatfájlok összegyűjtése ──────────────────────────────────
 
-# customtkinter: témák (JSON) és fontok (OTF) szükségesek
-# collect_data_files automatikusan megtalálja a package assets-eit
-try:
-    ctk_datas = collect_data_files("customtkinter")
-except Exception:
-    ctk_datas = []
-
-# Az összes adat amit be kell csomagolni
-datas = ctk_datas + [
+datas = [
     ("assets/icon.ico", "assets"),  # az ablak címsor-ikonjához
 ]
 
@@ -69,13 +61,6 @@ datas = ctk_datas + [
 # statikus elemzéssel
 
 hidden_imports = [
-    # customtkinter belső moduljai
-    "customtkinter",
-    "customtkinter.windows",
-    "customtkinter.windows.widgets",
-    "customtkinter.windows.widgets.theme",
-    "customtkinter.windows.ctk_tk",
-
     # psutil Windows-specifikus moduljai
     "psutil",
     "psutil._pswindows",
@@ -86,13 +71,6 @@ hidden_imports = [
     "winreg",
     "ctypes",
     "ctypes.wintypes",
-
-    # tkinter teljes csomag
-    "tkinter",
-    "tkinter.ttk",
-    "tkinter.messagebox",
-    "tkinter.filedialog",
-    "tkinter.simpledialog",
 
     # Egyéb stdlib
     "json",
@@ -124,10 +102,14 @@ a = Analysis(
         "numpy",
         "scipy",
         "pandas",
-        "PIL",
+        "PIL",              # a qfluentwidgets [full] extrája (akril effekt) hozná; nem használjuk
+        "colorthief",
         "cv2",
         "PyQt5",
         "PyQt6",
+        "tkinter",
+        "PySide6.QtWebEngineCore", "PySide6.QtWebEngineWidgets", "PySide6.QtQml", "PySide6.QtQuick",
+        "PySide6.QtMultimedia", "PySide6.Qt3DCore", "PySide6.QtPdf",
         "wx",
         "gtk",
         "IPython",

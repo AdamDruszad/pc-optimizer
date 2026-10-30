@@ -1,7 +1,9 @@
 # GameBooster — futtatási függőségek
 # Telepítés: pip install -r requirements.txt
 
-customtkinter>=5.2,<7
+PySide6>=6.8,<7
+# GPLv3: a lefordított exe terjesztésére a GPLv3 feltételei vonatkoznak
+PySide6-Fluent-Widgets>=1.11,<2
 psutil>=5.9
 
 # Opcionális, NVIDIA GPU-hőmérséklethez:
