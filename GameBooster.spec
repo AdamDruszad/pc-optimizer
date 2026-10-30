@@ -19,6 +19,7 @@
 # ─────────────────────────────────────────────────────────────
 
 import os
+import shutil
 import sys
 from PyInstaller.utils.hooks import collect_submodules
 from PyInstaller.utils.win32.versioninfo import (
@@ -168,3 +169,8 @@ coll = COLLECT(
     upx_exclude=[],
     name="GameBooster",             # dist\GameBooster\ mappa neve
 )
+
+# A licencszövegek az exe mellé kerülnek (a zipbe és a telepítőbe is): a GPLv3 és a psutil BSD-licence
+# a bináris terjesztéshez is megköveteli
+for src, name in [("LICENSE", "LICENSE.txt"), ("THIRD-PARTY-NOTICES.txt", "THIRD-PARTY-NOTICES.txt")]:
+    shutil.copy(src, os.path.join(DISTPATH, "GameBooster", name))
