@@ -83,5 +83,5 @@ def tcp_latency(host: str, port: int = 443, count: int = 10, timeout: float = 2.
                 samples.append((time.perf_counter() - start) * 1000)
         except OSError:
             lost += 1
-        time.sleep(0.1)
+        time.sleep(0.1)  # háttérszálon fut (ui.tasks.run_task), a felületet nem állítja meg
     return Latency(host, samples, lost)

@@ -61,12 +61,12 @@ echo.
 echo [3/6] Függőségek telepítése...
 if "%DO_INSTALL%"=="1" (
     pip install --quiet --upgrade pip
-    pip install --quiet customtkinter psutil pyinstaller
+    pip install --quiet -r requirements.txt pyinstaller
     if errorlevel 1 (
         echo  ❌ pip install sikertelen
         pause & exit /b 1
     )
-    echo  ✓ customtkinter, psutil, pyinstaller telepítve
+    echo  ✓ PySide6, qfluentwidgets, psutil, pyinstaller telepítve
 ) else (
     echo  ⏩ Kihagyva (--fast mód)
 )

@@ -34,7 +34,8 @@ def relaunch_as_admin() -> bool:
 
 
 def run(args: list[str], timeout: float = 30, encoding: str = "oem") -> tuple[bool, str]:
-    """Konzolos parancs; a kimenet a konzol kódlapján jön (magyar Windowson cp852)."""
+    """Konzolos parancs; a kimenet a konzol kódlapján jön (magyar Windowson cp852).
+    Blokkol: a felület csak háttérszálból hívja (ui.tasks.run_task)."""
     try:
         r = subprocess.run(args, capture_output=True, timeout=timeout, encoding=encoding,
                            errors="replace", creationflags=subprocess.CREATE_NO_WINDOW)

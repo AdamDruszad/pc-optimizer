@@ -2,7 +2,7 @@
 
 ![Python](https://img.shields.io/badge/Python-3.11+-3776AB?logo=python&logoColor=white)
 ![Windows](https://img.shields.io/badge/Windows-10%2F11-0078D4?logo=windows&logoColor=white)
-![License](https://img.shields.io/badge/License-MIT-green)
+![License](https://img.shields.io/badge/License-GPLv3-green)
 
 A desktop app that applies only documented, checkable Windows optimizations, shows you the exact
 change list before it touches anything, and records every original value in a change journal so
@@ -91,6 +91,7 @@ Details: [BUILD_GUIDE.md](BUILD_GUIDE.md)
 pip install -e ".[dev]"
 pytest
 ruff check gamebooster tests main.py
+python scripts/preview_ui.py --theme dark   # cycles every page, saves refined_green_preview.png
 ```
 
 Tests never touch the real system: Windows calls are replaced with fakes. Don't run apply paths on
@@ -102,7 +103,7 @@ gamebooster/
 ├── optimizers/    each module only *plans* changes: power, tweaks, services, game_mode,
 │                  cleaner, startup, network
 ├── monitoring/    sampler thread (psutil + PDH), hardware info from the registry
-└── ui/            CustomTkinter shell, design tokens, task runner, pages/
+└── ui/            PySide6 + qfluentwidgets (Fluent Design) window, emerald theme, task runner, views/
 ```
 
 ## Screenshots
@@ -119,4 +120,6 @@ privacy statement: [CODE_SIGNING_POLICY.md](CODE_SIGNING_POLICY.md).
 
 ## License
 
-MIT. Made by [AdamDruszad](https://github.com/AdamDruszad).
+GPL-3.0-or-later, see [LICENSE](LICENSE). Made by [AdamDruszad](https://github.com/AdamDruszad).
+
+The UI is built on [PySide6-Fluent-Widgets](https://github.com/zhiyiYo/PyQt-Fluent-Widgets) (GPLv3) and PySide6 (LGPLv3).

@@ -36,7 +36,7 @@ VersionInfoCompany=AdamDruszad
 VersionInfoDescription=GameBooster telepítő
 VersionInfoProductName=GameBooster
 VersionInfoVersion={#AppVersion}
-VersionInfoCopyright=MIT License
+VersionInfoCopyright=Copyright (C) 2026 AdamDruszad, GPLv3
 
 [Languages]
 Name: "hungarian"; MessagesFile: "compiler:Languages\Hungarian.isl"

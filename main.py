@@ -17,17 +17,18 @@ def main() -> None:
     log = logging.getLogger("gamebooster")
     log.info("GameBooster %s indul (Python %s, admin: %s)",
              __version__, sys.version.split()[0], winapi.is_admin())
+
+    from PySide6.QtWidgets import QApplication
+    app = QApplication(sys.argv)
     try:
-        from gamebooster.ui.app import App
-        App().mainloop()
+        from gamebooster.ui.main_window import MainWindow
+        window = MainWindow()
+        window.show()
+        sys.exit(app.exec())
     except Exception as e:
         log.critical("Kritikus hiba", exc_info=True)
-        import tkinter as tk
-        from tkinter import messagebox
-        root = tk.Tk()
-        root.withdraw()
-        messagebox.showerror("GameBooster", f"Váratlan hiba: {e}\n\nRészletek: {log_file}")
-        root.destroy()
+        from qfluentwidgets import MessageBox
+        MessageBox("GameBooster", f"Váratlan hiba: {e}\n\nRészletek: {log_file}", None).exec()
         raise
 
 
